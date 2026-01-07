@@ -8,9 +8,12 @@ import { ClientState, ConnectionState } from "./types.js";
 import { auth, ServerDeviceCodeResponse } from "./auth.js";
 import { config } from "./config.js";
 import { handleCommand } from "./commands.js";
+
 import { getTokenProfileTheAltening } from "./auth_thealtening.js";
 import { resolve4, resolveSrv } from "dns/promises";
 import { UserServerStore, serverStore } from "./store.js";
+
+const SEPARATOR = "======================================";
 
 const { Vec3 } = vec3 as any;
 const Enums = PLUGIN_MANAGER.Enums;
@@ -434,84 +437,130 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
 
     let chosenOption: ConnectType | null = null;
     if (!metadata || metadata.mode == null) {
-      sendCustomMessage(client.gameClient, "接続方法を選択", "gray");
+      // Display Info
+      sendCustomMessage(client.gameClient, SEPARATOR, "yellow");
+      sendCustomMessage(client.gameClient, "接続するサーバーを選択してください。", "gold");
+      sendCustomMessage(client.gameClient, "保存されたブックマークをクリックするか、以下のコマンドを使用してください:", "gray");
       sendChatComponent(client.gameClient, {
-        text: "1) ",
-        color: "gold",
-        extra: [
-          {
-            text: "1) オンラインサーバーに接続する (Minecraftアカウントが必要)",
-            color: "white",
-          },
-        ],
+        text: `/server join <ip> [online|offline]`,
+        color: "aqua",
         hoverEvent: {
           action: "show_text",
-          value: Enums.ChatColor.GOLD + "クリックして選択",
+          value: Enums.ChatColor.GRAY + "クリックしてコマンドをコピー"
         },
+        clickEvent: {
+          action: "suggest_command",
+          value: `/server join `
+        }
+      });
 
-        clickEvent: {
-          action: "run_command",
-          value: "$1",
-        },
-      });
-      sendChatComponent(client.gameClient, {
-        text: "2) ",
-        color: "gold",
-        extra: [
-          {
-            text: "2) オフラインサーバーに接続する (Minecraftアカウント不要)",
-            color: "white",
+      // Display Saved Servers
+      await serverStore.load();
+      const savedServers = serverStore.getServers(client.gameClient.username);
+      if (savedServers.length > 0) {
+        sendCustomMessage(client.gameClient, " ", "white");
+        sendCustomMessage(client.gameClient, "=== 保存されたサーバー ===", "gold");
+        savedServers.forEach(server => {
+          sendChatComponent(client.gameClient, {
+            text: `[${server.name}] `,
+            color: "aqua",
+            clickEvent: {
+              action: "run_command",
+              value: `/connect-bookmark ${server.name}`,
+            },
+            hoverEvent: {
+              action: "show_text",
+              value: Enums.ChatColor.GOLD + `クリックして接続 (${server.type || "ONLINE"})`
+            },
+            extra: [
+              {
+                text: `(${server.type || "ONLINE"})`,
+                color: "gray"
+              }
+            ]
+          });
+        });
+        sendCustomMessage(client.gameClient, " ", "reset");
+        sendChatComponent(client.gameClient, {
+          text: "新規追加: /server add <名前> <IP> [ポート] [online/offline]",
+          color: "gray",
+          clickEvent: {
+            action: "suggest_command",
+            value: "/server add "
           },
-        ],
-        hoverEvent: {
-          action: "show_text",
-          value: Enums.ChatColor.GOLD + "クリックして選択",
-        },
-        clickEvent: {
-          action: "run_command",
-          value: "$2",
-        },
-      });
-      sendChatComponent(client.gameClient, {
-        text: "3) ",
-        color: "gold",
-        extra: [
-          {
-            text: "3) TheAlteningアカウントプールを使用してオンラインサーバーに接続する (Minecraftアカウント不要)",
-            color: "white",
-          },
-        ],
-        hoverEvent: {
-          action: "show_text",
-          value: Enums.ChatColor.GOLD + "クリックして選択",
-        },
-        clickEvent: {
-          action: "run_command",
-          value: "$3",
-        },
-      });
-      sendCustomMessage(client.gameClient, "上記のオプションから選択してください（1 = オンライン, 2 = オフライン, 3 = TheAltening）。クリックするか、リストの番号を直接入力してください。", "green");
+          hoverEvent: {
+            action: "show_text",
+            value: Enums.ChatColor.YELLOW + "クリックしてコマンドを入力"
+          }
+        });
+        sendCustomMessage(client.gameClient, " ", "white");
+      }
+
       updateState(client.gameClient, "CONNECTION_TYPE");
 
       while (true) {
         const option = await awaitCommand(client.gameClient, (msg) => true);
-        switch (option.replace(/\$/gim, "")) {
-          default:
-            sendCustomMessage(client.gameClient, `"${option}" の意味がわかりません。有効なオプションを入力してください`, "red");
+
+        if (option.startsWith("/connect-bookmark")) {
+          const name = option.split(" ")[1];
+          const server = savedServers.find(s => s.name === name);
+          if (server) {
+            // Initialize metadata if it doesn't exist so we can set properties
+            if (!metadata) metadata = { ip: "", port: 0 };
+
+            metadata.ip = server.ip;
+            metadata.port = server.port || 25565;
+            metadata.mode = server.type || ConnectType.ONLINE;
+
+            chosenOption = metadata.mode;
+            sendCustomMessage(client.gameClient, `${server.name} (${metadata.mode}) に接続します...`, "green");
             break;
-          case "1":
-            chosenOption = ConnectType.ONLINE;
-            break;
-          case "2":
-            chosenOption = ConnectType.OFFLINE;
-            break;
-          case "3":
-            chosenOption = ConnectType.THEALTENING;
-            break;
+          } else {
+            sendCustomMessage(client.gameClient, "指定されたサーバーが見つかりません。", "red");
+            continue;
+          }
         }
-        if (chosenOption != null) {
-          if (option.startsWith("$")) playSelectSound(client.gameClient);
+
+        // Handle direct join command: /server join <ip> [online/offline] [port]
+        if (option.startsWith("/server join")) {
+          const args = option.split(" ");
+          // args[0]=/server, args[1]=join, args[2]=ip, args[3]=mode?, args[4]=port?
+          const ip = args[2];
+          if (!ip) {
+            sendCustomMessage(client.gameClient, "IPアドレスを指定してください: /server join <ip> [mode]", "red");
+            continue;
+          }
+
+          let mode = ConnectType.ONLINE;
+          let port = 25565;
+
+          // Parse remaining args
+          for (let i = 3; i < args.length; i++) {
+            const arg = args[i].toLowerCase();
+            if (arg === "online") mode = ConnectType.ONLINE;
+            else if (arg === "offline") mode = ConnectType.OFFLINE;
+            else if (!isNaN(Number(arg))) port = parseInt(arg);
+          }
+
+          if (!metadata) metadata = { ip: "", port: 0 };
+          metadata.ip = ip;
+          metadata.port = port;
+          metadata.mode = mode;
+          chosenOption = metadata.mode;
+          sendCustomMessage(client.gameClient, `${ip}:${port} (${mode}) に接続します...`, "green");
           break;
+        }
+
+        if (option.startsWith("/")) {
+          try {
+            const player = PLUGIN_MANAGER.proxy.players.get(client.gameClient.username);
+            handleCommand(player, option);
+          } catch (e) {
+            sendCustomMessage(client.gameClient, "コマンドの実行中にエラーが発生しました。", "red");
+          }
+          continue;
+        } else {
+          sendCustomMessage(client.gameClient, "コマンドを入力してください（例: /server join <ip>）", "red");
         }
       }
     } else chosenOption = metadata.mode;
@@ -563,74 +612,12 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         host = metadata.ip;
         port = metadata.port;
       } else {
-        await serverStore.load();
-        const savedServers = serverStore.getServers(client.gameClient.username);
-
-        if (savedServers.length > 0) {
-          sendCustomMessage(client.gameClient, "=== 保存されたサーバー ===", "gold");
-          savedServers.forEach(server => {
-            sendChatComponent(client.gameClient, {
-              text: `[${server.name}] `,
-              color: "aqua",
-              clickEvent: {
-                action: "run_command",
-                value: `/eag-switchservers online ${server.ip} ${server.port}`,
-              },
-              hoverEvent: {
-                action: "show_text",
-                value: Enums.ChatColor.GRAY + `${server.ip}:${server.port} に接続`
-              },
-              extra: [
-                {
-                  text: " [接続]",
-                  color: "green",
-                  clickEvent: {
-                    action: "run_command",
-                    value: `/eag-switchservers online ${server.ip} ${server.port}`
-                  },
-                  hoverEvent: {
-                    action: "show_text",
-                    value: Enums.ChatColor.GREEN + "クリックして接続"
-                  }
-                }
-              ]
-            });
-          });
-          sendCustomMessage(client.gameClient, "参加するサーバーを選択するか、IPを直接指定してください:", "yellow");
-        }
-
-        updateState(client.gameClient, "SERVER");
-        sendMessage(client.gameClient, `参加するサーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
-        while (true) {
-          const msg = await awaitCommand(client.gameClient, (msg) => msg.startsWith("/join")),
-            parsed = msg.split(/ /gi, 3);
-          if (parsed.length < 2) sendMessage(client.gameClient, `接続先サーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
-          else if (parsed.length > 2 && isNaN(parseInt(parsed[2])))
-            sendMessage(client.gameClient, `有効なポート番号を入力してください ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
-          else {
-            host = parsed[1];
-            if (parsed.length > 2) port = parseInt(parsed[2]);
-            if (port != null && !config.allowCustomPorts) {
-              sendCustomMessage(client.gameClient, "カスタムサーバーポートの使用は許可されていません /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
-              host = null;
-              port = null;
-            } else {
-              if (host.match(/^(?:\*\.)?((?!hypixel\.net$)[^.]+\.)*hypixel\.net$/) && config.disallowHypixel) {
-                sendCustomMessage(
-                  client.gameClient,
-                  "許可されていないサーバーです。接続を拒否しましたHypixelはEaglercraftクライアントを誤検知することが知られているため、接続を許可していません。 /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""),
-                  "red"
-                );
-              } else if (!(await isValidIp(host))) {
-                sendCustomMessage(client.gameClient, "無効なサーバーアドレスです /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
-                host = null;
-                port = null;
-              } else {
-                port = port ?? 25565;
-                break;
-              }
-            }
-          }
+        const result = await promptServerConnect(client);
+        if (result) {
+          host = result.host;
+          port = result.port;
+        } else {
+          return; // Disconnected or handled elsewhere
         }
       }
 
@@ -954,30 +941,12 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         host = metadata.ip;
         port = metadata.port;
       } else {
-        updateState(client.gameClient, "SERVER");
-        sendMessage(client.gameClient, `参加するサーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
-        while (true) {
-          const msg = await awaitCommand(client.gameClient, (msg) => msg.startsWith("/join")),
-            parsed = msg.split(/ /gi, 3);
-          if (parsed.length < 2) sendMessage(client.gameClient, `接続先サーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
-          else if (parsed.length > 2 && isNaN(parseInt(parsed[2])))
-            sendMessage(client.gameClient, `有効なポート番号を入力してください ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
-          else {
-            host = parsed[1];
-            if (parsed.length > 2) port = parseInt(parsed[2]);
-            if (port != null && !config.allowCustomPorts) {
-              sendCustomMessage(client.gameClient, "カスタムサーバーポートの使用は許可されていません /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
-              host = null;
-              port = null;
-            } else if (!(await isValidIp(host))) {
-              sendCustomMessage(client.gameClient, "無効なサーバーアドレスです /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
-              host = null;
-              port = null;
-            } else {
-              port = port ?? 25565;
-              break;
-            }
-          }
+        const result = await promptServerConnect(client);
+        if (result) {
+          host = result.host;
+          port = result.port;
+        } else {
+          return;
         }
       }
       try {
@@ -1055,4 +1024,96 @@ export function generateSpawnChunk(): Chunk.PCChunk {
   // chunk.setBlockLight(new Vec3(8, 65, 8), 15);
   chunk.setBlockLight(new Vec3(8, 66, 8), 15);
   return chunk;
+}
+
+async function promptServerConnect(client: ClientState): Promise<{ host: string; port: number } | null> {
+  await serverStore.load();
+  const savedServers = serverStore.getServers(client.gameClient.username);
+
+  if (savedServers.length > 0) {
+    sendCustomMessage(client.gameClient, "=== 保存されたサーバー ===", "gold");
+    savedServers.forEach(server => {
+      sendChatComponent(client.gameClient, {
+        text: `[${server.name}] `,
+        color: "aqua",
+        clickEvent: {
+          action: "run_command",
+          value: `/eag-switchservers online ${server.ip} ${server.port}`,
+        },
+        hoverEvent: {
+          action: "show_text",
+          value: Enums.ChatColor.GRAY + `${server.ip}:${server.port} に接続`
+        },
+        extra: [
+          {
+            text: " [接続]",
+            color: "green",
+            clickEvent: {
+              action: "run_command",
+              value: `/eag-switchservers online ${server.ip} ${server.port}`
+            },
+            hoverEvent: {
+              action: "show_text",
+              value: Enums.ChatColor.GREEN + "クリックして接続"
+            }
+          }
+        ]
+      });
+    });
+    sendCustomMessage(client.gameClient, "参加するサーバーを選択するか、IPを直接指定してください:", "yellow");
+  }
+
+  updateState(client.gameClient, "SERVER");
+  sendMessage(client.gameClient, `参加するサーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
+  while (true) {
+    const msg = await awaitCommand(client.gameClient, (msg) => true);
+    if (msg.startsWith("/")) {
+      try {
+        const player = PLUGIN_MANAGER.proxy.players.get(client.gameClient.username);
+        // Allow join command to be processed by our logic below if it matches /join
+        if (!msg.startsWith("/join")) {
+          handleCommand(player, msg);
+          continue;
+        }
+      } catch (e) { }
+      if (!msg.startsWith("/join")) continue;
+    }
+
+    if (!msg.startsWith("/join")) {
+      sendMessage(client.gameClient, `コマンドは ${Enums.ChatColor.GOLD}/join <ip>${Enums.ChatColor.RESET} です。`);
+      continue;
+    }
+
+    const parsed = msg.split(/ /gi, 3);
+    if (parsed.length < 2) sendMessage(client.gameClient, `接続先サーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
+    else if (parsed.length > 2 && isNaN(parseInt(parsed[2])))
+      sendMessage(client.gameClient, `有効なポート番号を入力してください ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
+    else {
+      let host = parsed[1];
+      let port: number | null = null;
+      if (parsed.length > 2) port = parseInt(parsed[2]);
+
+      if (port != null && !config.allowCustomPorts) {
+        sendCustomMessage(client.gameClient, "カスタムサーバーポートの使用は許可されていません /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
+        continue;
+      }
+
+      if (host.match(/^(?:\*\.)?((?!hypixel\.net$)[^.]+\.)*hypixel\.net$/) && config.disallowHypixel) {
+        sendCustomMessage(
+          client.gameClient,
+          "許可されていないサーバーです。接続を拒否しましたHypixelはEaglercraftクライアントを誤検知することが知られているため、接続を許可していません。 /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""),
+          "red"
+        );
+        continue;
+      }
+
+      if (!(await isValidIp(host))) {
+        sendCustomMessage(client.gameClient, "無効なサーバーアドレスです /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
+        continue;
+      }
+
+      port = port ?? 25565;
+      return { host, port };
+    }
+  }
 }

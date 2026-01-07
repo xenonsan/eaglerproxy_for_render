@@ -161,11 +161,22 @@ export async function handleServerCommand(sender: Player, cmd: string) {
   if (subCommand === "add") {
     const name = args[2];
     const ip = args[3];
-    const port = parseInt(args[4] || "25565");
+    let port = parseInt(args[4] || "25565");
+    let type: ConnectType = ConnectType.ONLINE;
+
+    // Check if the last argument is a mode
+    const lastArg = args[args.length - 1]?.toUpperCase();
+    if (lastArg === "ONLINE" || lastArg === "OFFLINE") {
+      type = lastArg as ConnectType;
+      // If port was actually the mode, reset port to default
+      if (args[4]?.toUpperCase() === lastArg) {
+        port = 25565;
+      }
+    }
 
     if (!name || !ip) {
       return sendPluginChatMessage(sender, {
-        text: "使用法: /server add <名前> <IP> [ポート]",
+        text: "使用法: /server add <名前> <IP> [ポート] [online/offline]",
         color: "red",
       });
     }
@@ -177,9 +188,9 @@ export async function handleServerCommand(sender: Player, cmd: string) {
       });
     }
 
-    await serverStore.addServer(sender.username, { name, ip, port });
+    await serverStore.addServer(sender.username, { name, ip, port, type });
     sendPluginChatMessage(sender, {
-      text: `サーバー '${name}' (${ip}:${port}) を保存しました！`,
+      text: `サーバー '${name}' (${ip}:${port}, ${type}) を保存しました！`,
       color: "green",
     });
 
@@ -214,11 +225,11 @@ export async function handleServerCommand(sender: Player, cmd: string) {
 
     for (const server of servers) {
       sendPluginChatMessage(sender, {
-        text: `[${server.name}]`,
+        text: `[${server.name}] (${server.type || "ONLINE"})`,
         color: "aqua",
         clickEvent: {
           action: "run_command",
-          value: `/eag-switchservers online ${server.ip} ${server.port}`,
+          value: `/connect-bookmark ${server.name}`,
         },
         hoverEvent: {
           action: "show_text",
@@ -240,6 +251,28 @@ export async function handleServerCommand(sender: Player, cmd: string) {
         ]
       });
     }
+
+  } else if (subCommand === "join") {
+    // /server join <ip> [online/offline] [port]
+    const ip = args[2];
+    if (!ip) {
+      return sendPluginChatMessage(sender, {
+        text: "使用法: /server join <IP> [online/offline] [ポート]",
+        color: "red",
+      });
+    }
+
+    let mode = "online";
+    let port = "25565";
+
+    for (let i = 3; i < args.length; i++) {
+      const arg = args[i].toLowerCase();
+      if (arg === "online" || arg === "offline") mode = arg;
+      else if (!isNaN(Number(arg))) port = arg;
+    }
+
+    // Delegate to switchServer
+    return switchServer(`/eag-switchservers ${mode} ${ip} ${port}`, sender);
 
   } else {
     sendPluginChatMessage(sender, {

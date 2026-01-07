@@ -16,6 +16,7 @@ export interface SavedServer {
   name: string;
   ip: string;
   port?: number;
+  type?: ConnectType;
 }
 
 export enum ConnectionState {
