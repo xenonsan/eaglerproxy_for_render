@@ -25,7 +25,7 @@ const logger = new PLUGIN_MANAGER.Logger("PlayerHandler");
 let SERVER: ServerGlobals = null;
 
 export function hushConsole() {
-  const ignoredMethod = () => {};
+  const ignoredMethod = () => { };
   global.console.info = ignoredMethod;
   global.console.warn = ignoredMethod;
   global.console.error = ignoredMethod;
@@ -155,9 +155,9 @@ export function setSG(svr: ServerGlobals) {
 export function disconectIdle() {
   SERVER.players.forEach((client) => {
     if (client.state == ConnectionState.AUTH && Date.now() - client.lastStatusUpdate > MAX_LIFETIME_AUTH) {
-      client.gameClient.end("Timed out waiting for user to login via Microsoft!");
+      client.gameClient.end("Microsoftでのログイン待機中にタイムアウトしました");
     } else if (client.state == ConnectionState.SUCCESS && Date.now() - client.lastStatusUpdate > MAX_LIFETIME_CONNECTED) {
-      client.gameClient.end(Enums.ChatColor.RED + "Please enter the IP of the server you'd like to connect to in chat.");
+      client.gameClient.end(Enums.ChatColor.RED + "チャットで接続したいサーバーのIPを入力してください。");
     }
   });
 }
@@ -190,20 +190,20 @@ export function handleConnect(client: ClientState, additionalParams: { ip: strin
 
   client.gameClient.write("playerlist_header", {
     header: JSON.stringify({
-      text: ` ${Enums.ChatColor.GOLD}EaglerProxy Authentication Server `,
+      text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
     }),
     footer: JSON.stringify({
-      text: `${Enums.ChatColor.GOLD}Please wait for instructions.`,
+      text: `${Enums.ChatColor.GOLD}指示をお待ちください。`,
     }),
   });
 
   if (additionalParams != null && additionalParams.ip != null && additionalParams.port != null) {
-    sendMessage(client.gameClient, `${Enums.ChatColor.GREEN}Automatically connecting to server ${Enums.ChatColor.GOLD}${additionalParams.ip}:${additionalParams.port}${Enums.ChatColor.GREEN}.`);
+    sendMessage(client.gameClient, `${Enums.ChatColor.GREEN}サーバー ${Enums.ChatColor.GOLD}${additionalParams.ip}:${additionalParams.port}${Enums.ChatColor.GREEN} に自動接続しています。`);
   }
   if (additionalParams && additionalParams.session && additionalParams.session.expires_on - Date.now() > 24 * 60 * 60 * 1000) {
     sendMessage(
       client.gameClient,
-      `${Enums.ChatColor.RED}Your session token is valid for ${Math.floor((additionalParams.session.expires_on - Date.now()) / 1000 / 60)} more minutes, and will expire in less than 24 hours! Please obtain a new session URL.`
+      `${Enums.ChatColor.RED}あなたのセッショントークンはあと ${Math.floor((additionalParams.session.expires_on - Date.now()) / 1000 / 60)} 分間有効ですが、24時間以内に期限切れになります新しいセッションURLを取得してください。`
     );
   }
   onConnect(client, additionalParams);
@@ -236,10 +236,10 @@ export function sendCustomMessage(client: Client, msg: string, color: string, ..
     message: JSON.stringify(
       components.length > 0
         ? {
-            text: msg,
-            color,
-            extra: components,
-          }
+          text: msg,
+          color,
+          extra: components,
+        }
         : { text: msg, color }
     ),
     position: 1,
@@ -266,11 +266,11 @@ export function sendMessageWarning(client: Client, msg: string) {
 export function sendMessageLogin(client: Client, url: string, token: string) {
   client.write("chat", {
     message: JSON.stringify({
-      text: "Please open ",
+      text: "",
       color: Enums.ChatColor.RESET,
       extra: [
         {
-          text: "this link",
+          text: "こちらのリンク",
           color: "gold",
           clickEvent: {
             action: "open_url",
@@ -278,11 +278,11 @@ export function sendMessageLogin(client: Client, url: string, token: string) {
           },
           hoverEvent: {
             action: "show_text",
-            value: Enums.ChatColor.GOLD + "Click to open me in a new window!",
+            value: Enums.ChatColor.GOLD + "クリックして新しいウィンドウで開く",
           },
         },
         {
-          text: " to authenticate via Microsoft.",
+          text: " を開いて、Microsoftで認証してください。",
         },
       ],
     }),
@@ -295,17 +295,17 @@ export function updateState(client: Client, newState: "CONNECTION_TYPE" | "AUTH_
     case "CONNECTION_TYPE":
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Authentication Server `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
         }),
         footer: JSON.stringify({
-          text: `${Enums.ChatColor.RED}Choose the connection type: 1 = online, 2 = offline, 3 = TheAltening.`,
+          text: `${Enums.ChatColor.RED}接続タイプを選択してください: 1 = オンライン, 2 = オフライン, 3 = TheAltening`,
         }),
       });
       break;
     case "AUTH_THEALTENING":
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Authentication Server `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
         }),
         footer: JSON.stringify({
           text: `${Enums.ChatColor.RED}panel.thealtening.com/#generator${Enums.ChatColor.GOLD} | ${Enums.ChatColor.RED}/login <alt_token>`,
@@ -316,20 +316,20 @@ export function updateState(client: Client, newState: "CONNECTION_TYPE" | "AUTH_
       if (code == null || uri == null) throw new Error("Missing code/uri required for title message type AUTH");
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Authentication Server `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
         }),
         footer: JSON.stringify({
-          text: `${Enums.ChatColor.RED}${uri}${Enums.ChatColor.GOLD} | Code: ${Enums.ChatColor.RED}${code}`,
+          text: `${Enums.ChatColor.RED}${uri}${Enums.ChatColor.GOLD} | コード: ${Enums.ChatColor.RED}${code}`,
         }),
       });
       break;
     case "SERVER":
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Authentication Server `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
         }),
         footer: JSON.stringify({
-          text: `${Enums.ChatColor.RED}/join <ip>${config.allowCustomPorts ? " [port]" : ""}`,
+          text: `${Enums.ChatColor.RED}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}`,
         }),
       });
       break;
@@ -348,7 +348,7 @@ export function printSessionMessage(client: ClientState, session: any, proxySess
   const https = secureURL.toString();
 
   sendChatComponent(client.gameClient, {
-    text: "Logged in! Use this server URL to continue using this account (open the link; try each one): ",
+    text: "ログインしましたこのアカウントを引き続き使用するには、こちらのサーバーURLを使用してください（各リンクを試してください）: ",
     color: "green",
     extra: [
       {
@@ -356,7 +356,7 @@ export function printSessionMessage(client: ClientState, session: any, proxySess
         color: "gold",
         hoverEvent: {
           action: "show_text",
-          value: Enums.ChatColor.GOLD + "Click to copy!",
+          value: Enums.ChatColor.GOLD + "クリックしてコピー",
         },
         clickEvent: {
           action: "open_url",
@@ -369,7 +369,7 @@ export function printSessionMessage(client: ClientState, session: any, proxySess
         color: "gold",
         hoverEvent: {
           action: "show_text",
-          value: Enums.ChatColor.GOLD + "Click to copy!",
+          value: Enums.ChatColor.GOLD + "クリックしてコピー",
         },
         clickEvent: {
           action: "open_url",
@@ -379,7 +379,7 @@ export function printSessionMessage(client: ClientState, session: any, proxySess
     ],
   });
   sendChatComponent(client.gameClient, {
-    text: "Revealing/showing the URL to others (including the underling server URL) can potentially allow others to compromise your account.\n" + "Do not click or open any of the above links if others can observe you.",
+    text: "このURL（サーバーURLを含む）を他人に教えると、アカウントが乗っ取られる可能性があります。\n" + "他人が見ている場所で上記のリンクを操作しないでください。",
     color: "red",
   });
 }
@@ -410,42 +410,42 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
     });
 
     if (config.showDisclaimers) {
-      sendMessageWarning(client.gameClient, `WARNING: This proxy allows you to connect to any 1.8.9 server. Gameplay has shown no major issues, but please note that EaglercraftX may flag some anticheats while playing.`);
+      sendMessageWarning(client.gameClient, `警告: このプロキシは任意の1.8.9サーバーへの接続を許可します。プレイに大きな問題は見られませんが、EaglercraftXが一部のアンチチートに検知される可能性があることに注意してください。`);
       await new Promise((res) => setTimeout(res, 2000));
 
       sendMessageWarning(
         client.gameClient,
-        `ADVISORY FOR HYPIXEL PLAYERS: THIS PROXY FALLS UNDER HYPIXEL'S "DISALLOWED MODIFICATIONS" MOD CATEGORY. JOINING THE SERVER WILL RESULT IN AN IRREPEALABLE PUNISHMENT BEING APPLIED TO YOUR ACCOUNT. YOU HAVE BEEN WARNED - PLAY AT YOUR OWN RISK!`
+        `Hypixelプレイヤーへの勧告: このプロキシはHypixelの「許可されていない改造(Disallowed Modifications)」カテゴリに該当します。参加すると、アカウントに異議申し立て不可能な罰則が適用されることになります。自己責任でプレイしてください`
       );
       await new Promise((res) => setTimeout(res, 2000));
     }
 
     if (config.authentication.enabled) {
-      sendCustomMessage(client.gameClient, "This instance is password-protected. Sign in with /password <password>", "gold");
+      sendCustomMessage(client.gameClient, "このインスタンスはパスワードで保護されています。 /password <パスワード> でサインインしてください", "gold");
       const password = await awaitCommand(client.gameClient, (msg) => msg.startsWith("/password "));
       if (password === `/password ${config.authentication.password}`) {
-        sendCustomMessage(client.gameClient, "Successfully signed into instance!", "green");
+        sendCustomMessage(client.gameClient, "インスタンスへのサインインに成功しました", "green");
       } else {
-        client.gameClient.end(Enums.ChatColor.RED + "Bad password!");
+        client.gameClient.end(Enums.ChatColor.RED + "パスワードが違います");
         return;
       }
     }
 
     let chosenOption: ConnectType | null = null;
     if (!metadata || metadata.mode == null) {
-      sendCustomMessage(client.gameClient, "What would you like to do?", "gray");
+      sendCustomMessage(client.gameClient, "接続方法を選択", "gray");
       sendChatComponent(client.gameClient, {
         text: "1) ",
         color: "gold",
         extra: [
           {
-            text: "Connect to an online server (Minecraft account needed)",
+            text: "1) オンラインサーバーに接続する (Minecraftアカウントが必要)",
             color: "white",
           },
         ],
         hoverEvent: {
           action: "show_text",
-          value: Enums.ChatColor.GOLD + "Click me to select!",
+          value: Enums.ChatColor.GOLD + "クリックして選択",
         },
 
         clickEvent: {
@@ -458,13 +458,13 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         color: "gold",
         extra: [
           {
-            text: "Connect to an offline server (no Minecraft account needed)",
+            text: "2) オフラインサーバーに接続する (Minecraftアカウント不要)",
             color: "white",
           },
         ],
         hoverEvent: {
           action: "show_text",
-          value: Enums.ChatColor.GOLD + "Click me to select!",
+          value: Enums.ChatColor.GOLD + "クリックして選択",
         },
         clickEvent: {
           action: "run_command",
@@ -476,27 +476,27 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         color: "gold",
         extra: [
           {
-            text: "Connect to an online server via TheAltening account pool (no Minecraft account needed)",
+            text: "3) TheAlteningアカウントプールを使用してオンラインサーバーに接続する (Minecraftアカウント不要)",
             color: "white",
           },
         ],
         hoverEvent: {
           action: "show_text",
-          value: Enums.ChatColor.GOLD + "Click me to select!",
+          value: Enums.ChatColor.GOLD + "クリックして選択",
         },
         clickEvent: {
           action: "run_command",
           value: "$3",
         },
       });
-      sendCustomMessage(client.gameClient, "Select an option from the above (1 = online, 2 = offline, 3 = TheAltening), either by clicking or manually typing out the option's number on the list.", "green");
+      sendCustomMessage(client.gameClient, "上記のオプションから選択してください（1 = オンライン, 2 = オフライン, 3 = TheAltening）。クリックするか、リストの番号を直接入力してください。", "green");
       updateState(client.gameClient, "CONNECTION_TYPE");
 
       while (true) {
         const option = await awaitCommand(client.gameClient, (msg) => true);
         switch (option.replace(/\$/gim, "")) {
           default:
-            sendCustomMessage(client.gameClient, `I don't understand what you meant by "${option}", please reply with a valid option!`, "red");
+            sendCustomMessage(client.gameClient, `"${option}" の意味がわかりません。有効なオプションを入力してください`, "red");
             break;
           case "1":
             chosenOption = ConnectType.ONLINE;
@@ -520,7 +520,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         if (config.showDisclaimers) {
           sendMessageWarning(
             client.gameClient,
-            `WARNING: You will be prompted to log in via Microsoft to obtain a session token necessary to join games. Any data related to your account will not be saved and for transparency reasons this proxy's source code is available on Github.`
+            `警告: 参加に必要なセッショントークンを取得するために、Microsoft経由でのログインを求められます。アカウントに関するデータは保存されません。透明性の向上のため、このプロキシのソースコードはGithubで公開されています。`
           );
         }
         await new Promise((res) => setTimeout(res, 2000));
@@ -552,7 +552,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
             res(result);
           })
         );
-        sendMessage(client.gameClient, Enums.ChatColor.BRIGHT_GREEN + "Successfully logged into Minecraft!");
+        sendMessage(client.gameClient, Enums.ChatColor.BRIGHT_GREEN + "Minecraftへのログインに成功しました");
       }
 
       client.state = ConnectionState.SUCCESS;
@@ -563,29 +563,29 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         port = metadata.port;
       } else {
         updateState(client.gameClient, "SERVER");
-        sendMessage(client.gameClient, `Provide a server to join. ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+        sendMessage(client.gameClient, `参加するサーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
         while (true) {
           const msg = await awaitCommand(client.gameClient, (msg) => msg.startsWith("/join")),
             parsed = msg.split(/ /gi, 3);
-          if (parsed.length < 2) sendMessage(client.gameClient, `Please provide a server to connect to. ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+          if (parsed.length < 2) sendMessage(client.gameClient, `接続先サーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
           else if (parsed.length > 2 && isNaN(parseInt(parsed[2])))
-            sendMessage(client.gameClient, `A valid port number has to be passed! ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+            sendMessage(client.gameClient, `有効なポート番号を入力してください ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
           else {
             host = parsed[1];
             if (parsed.length > 2) port = parseInt(parsed[2]);
             if (port != null && !config.allowCustomPorts) {
-              sendCustomMessage(client.gameClient, "You are not allowed to use custom server ports! /join <ip>" + (config.allowCustomPorts ? " [port]" : ""), "red");
+              sendCustomMessage(client.gameClient, "カスタムサーバーポートの使用は許可されていません /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
               host = null;
               port = null;
             } else {
               if (host.match(/^(?:\*\.)?((?!hypixel\.net$)[^.]+\.)*hypixel\.net$/) && config.disallowHypixel) {
                 sendCustomMessage(
                   client.gameClient,
-                  "Disallowed server, refusing to connect! Hypixel has been known to falsely flag Eaglercraft clients, and thus we do not allow connecting to their server. /join <ip>" + (config.allowCustomPorts ? " [port]" : ""),
+                  "許可されていないサーバーです。接続を拒否しましたHypixelはEaglercraftクライアントを誤検知することが知られているため、接続を許可していません。 /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""),
                   "red"
                 );
               } else if (!(await isValidIp(host))) {
-                sendCustomMessage(client.gameClient, "Invalid server address! /join <ip>" + (config.allowCustomPorts ? " [port]" : ""), "red");
+                sendCustomMessage(client.gameClient, "無効なサーバーアドレスです /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
                 host = null;
                 port = null;
               } else {
@@ -615,7 +615,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
 
       try {
         sendChatComponent(client.gameClient, {
-          text: `Joining server under ${savedAuth.selectedProfile.name}/your Minecraft account's username! Run `,
+          text: `${savedAuth.selectedProfile.name} (あなたのMinecraftアカウント) として参加していますプロキシコマンドの一覧を表示するには `,
           color: "aqua",
           extra: [
             {
@@ -623,7 +623,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
               color: "gold",
               hoverEvent: {
                 action: "show_text",
-                value: Enums.ChatColor.GOLD + "Click me to run this command!",
+                value: Enums.ChatColor.GOLD + "クリックしてコマンドを実行",
               },
               clickEvent: {
                 action: "run_command",
@@ -631,7 +631,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
               },
             },
             {
-              text: " for a list of proxy commands.",
+              text: " を実行してください。",
               color: "aqua",
             },
           ],
@@ -669,7 +669,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         if (!client.gameClient.ended) {
           client.gameClient.end(
             Enums.ChatColor.RED +
-              `Something went wrong whilst switching servers: ${err.message}${err.code == "ENOTFOUND" ? (host.includes(":") ? `\n${Enums.ChatColor.GRAY}Suggestion: Replace the : in your IP with a space.` : "\nIs that IP valid?") : ""}`
+            `サーバー切り替え中にエラーが発生しました: ${err.message}${err.code == "ENOTFOUND" ? (host.includes(":") ? `\n${Enums.ChatColor.GRAY}ヒント: IP内の : をスペースに置き換えてみてください。` : "\nそのIPは有効ですか？") : ""}`
           );
         }
       }
@@ -680,10 +680,10 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
       updateState(client.gameClient, "AUTH_THEALTENING");
 
       if (config.showDisclaimers) {
-        sendMessageWarning(client.gameClient, `WARNING: You've chosen to use an account from TheAltening's account pool. Please note that accounts and shared, and may be banned from whatever server you are attempting to join.`);
+        sendMessageWarning(client.gameClient, `警告: TheAlteningのアカウントプールを使用することを選択しました。アカウントは共有されているため、参加しようとしているサーバーで禁止されている可能性があることに注意してください。`);
       }
       sendChatComponent(client.gameClient, {
-        text: "Please log in and generate an alt token at ",
+        text: "ログインして、こちらでアルトトークンを生成してください ",
         color: "white",
         extra: [
           {
@@ -691,7 +691,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
             color: "gold",
             hoverEvent: {
               action: "show_text",
-              value: Enums.ChatColor.GOLD + "Click me to open in a new window!",
+              value: Enums.ChatColor.GOLD + "クリックして新しいウィンドウで開く",
             },
             clickEvent: {
               action: "open_url",
@@ -699,7 +699,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
             },
           },
           {
-            text: ", and then run ",
+            text: "。その後、ログインするために ",
             color: "white",
           },
           {
@@ -715,7 +715,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
             },
           },
           {
-            text: " to log in.",
+            text: " を実行してください。",
             color: "white",
           },
         ],
@@ -727,7 +727,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
           splitResponse = tokenResponse.split(/ /gim, 2).slice(1);
         if (splitResponse.length != 1) {
           sendChatComponent(client.gameClient, {
-            text: "Invalid usage! Please use the command as follows: ",
+            text: "無効な使い方です次のようにコマンドを使用してください: ",
             color: "red",
             extra: [
               {
@@ -735,7 +735,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
                 color: "gold",
                 hoverEvent: {
                   action: "show_text",
-                  value: Enums.ChatColor.GOLD + "Copy me to chat!",
+                  value: Enums.ChatColor.GOLD + "チャットにコピー",
                 },
                 clickEvent: {
                   action: "suggest_command",
@@ -752,15 +752,15 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
           const token = splitResponse[0];
           if (!token.endsWith("@alt.com")) {
             sendChatComponent(client.gameClient, {
-              text: "Please provide a valid token (you can get one ",
+              text: "有効なトークンを提供してください（取得は",
               color: "red",
               extra: [
                 {
-                  text: "here",
+                  text: "こちら",
                   color: "white",
                   hoverEvent: {
                     action: "show_text",
-                    value: Enums.ChatColor.GOLD + "Click me to open in a new window!",
+                    value: Enums.ChatColor.GOLD + "クリックして新しいウィンドウで開く",
                   },
                   clickEvent: {
                     action: "open_url",
@@ -768,7 +768,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
                   },
                 },
                 {
-                  text: "). ",
+                  text: "）。 ",
                   color: "red",
                 },
                 {
@@ -776,7 +776,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
                   color: "gold",
                   hoverEvent: {
                     action: "show_text",
-                    value: Enums.ChatColor.GOLD + "Copy me to chat!",
+                    value: Enums.ChatColor.GOLD + "チャットにコピー",
                   },
                   clickEvent: {
                     action: "suggest_command",
@@ -790,14 +790,14 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
               ],
             });
           } else {
-            sendCustomMessage(client.gameClient, "Validating alt token...", "gray");
+            sendCustomMessage(client.gameClient, "アルトトークンを検証中...", "gray");
             try {
               appendOptions = await getTokenProfileTheAltening(token);
-              sendCustomMessage(client.gameClient, `Successfully validated your alt token and retrieved your session profile! You'll be joining to your preferred server as ${appendOptions.username}.`, "green");
+              sendCustomMessage(client.gameClient, `アルトトークンの検証とセッションプロファイルの取得に成功しました ${appendOptions.username} としてサーバーに参加します。`, "green");
               break;
             } catch (err) {
               sendChatComponent(client.gameClient, {
-                text: `TheAltening's servers replied with an error (${err.message}), please try again! `,
+                text: `TheAlteningのサーバーがエラー (${err.message}) を返しました。もう一度お試しください `,
                 color: "red",
                 extra: [
                   {
@@ -805,7 +805,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
                     color: "gold",
                     hoverEvent: {
                       action: "show_text",
-                      value: Enums.ChatColor.GOLD + "Copy me to chat!",
+                      value: Enums.ChatColor.GOLD + "チャットにコピー",
                     },
                     clickEvent: {
                       action: "suggest_command",
@@ -831,22 +831,22 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         port = metadata.port;
       } else {
         updateState(client.gameClient, "SERVER");
-        sendMessage(client.gameClient, `Provide a server to join. ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+        sendMessage(client.gameClient, `参加するサーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
         while (true) {
           const msg = await awaitCommand(client.gameClient, (msg) => msg.startsWith("/join")),
             parsed = msg.split(/ /gi, 3);
-          if (parsed.length < 2) sendMessage(client.gameClient, `Please provide a server to connect to. ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+          if (parsed.length < 2) sendMessage(client.gameClient, `接続先サーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
           else if (parsed.length > 2 && isNaN(parseInt(parsed[2])))
-            sendMessage(client.gameClient, `A valid port number has to be passed! ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+            sendMessage(client.gameClient, `有効なポート番号を入力してください ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
           else {
             host = parsed[1];
             if (parsed.length > 2) port = parseInt(parsed[2]);
             if (port != null && !config.allowCustomPorts) {
-              sendCustomMessage(client.gameClient, "You are not allowed to use custom server ports! /join <ip>", "red");
+              sendCustomMessage(client.gameClient, "カスタムサーバーポートの使用は許可されていません /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
               host = null;
               port = null;
             } else if (!(await isValidIp(host))) {
-              sendCustomMessage(client.gameClient, "Invalid server address! /join <ip>" + (config.allowCustomPorts ? " [port]" : ""), "red");
+              sendCustomMessage(client.gameClient, "無効なサーバーアドレスです /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
               host = null;
               port = null;
             } else {
@@ -858,7 +858,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
       }
       try {
         sendChatComponent(client.gameClient, {
-          text: `Joining server under ${appendOptions.username}/TheAltening account username! Run `,
+          text: `${appendOptions.username} (TheAlteningアカウント) として参加していますプロキシコマンドの一覧を表示するには `,
           color: "aqua",
           extra: [
             {
@@ -866,7 +866,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
               color: "gold",
               hoverEvent: {
                 action: "show_text",
-                value: Enums.ChatColor.GOLD + "Click me to run this command!",
+                value: Enums.ChatColor.GOLD + "クリックしてコマンドを実行",
               },
               clickEvent: {
                 action: "run_command",
@@ -874,7 +874,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
               },
             },
             {
-              text: " for a list of proxy commands.",
+              text: " を実行してください。",
               color: "aqua",
             },
           ],
@@ -905,7 +905,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         if (!client.gameClient.ended) {
           client.gameClient.end(
             Enums.ChatColor.RED +
-              `Something went wrong whilst switching servers: ${err.message}${err.code == "ENOTFOUND" ? (host.includes(":") ? `\n${Enums.ChatColor.GRAY}Suggestion: Replace the : in your IP with a space.` : "\nIs that IP valid?") : ""}`
+            `Something went wrong whilst switching servers: ${err.message}${err.code == "ENOTFOUND" ? (host.includes(":") ? `\n${Enums.ChatColor.GRAY}Suggestion: Replace the : in your IP with a space.` : "\nIs that IP valid?") : ""}`
           );
         }
       }
@@ -918,22 +918,22 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         port = metadata.port;
       } else {
         updateState(client.gameClient, "SERVER");
-        sendMessage(client.gameClient, `Provide a server to join. ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+        sendMessage(client.gameClient, `参加するサーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
         while (true) {
           const msg = await awaitCommand(client.gameClient, (msg) => msg.startsWith("/join")),
             parsed = msg.split(/ /gi, 3);
-          if (parsed.length < 2) sendMessage(client.gameClient, `Please provide a server to connect to. ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+          if (parsed.length < 2) sendMessage(client.gameClient, `接続先サーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
           else if (parsed.length > 2 && isNaN(parseInt(parsed[2])))
-            sendMessage(client.gameClient, `A valid port number has to be passed! ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [port]" : ""}${Enums.ChatColor.RESET}.`);
+            sendMessage(client.gameClient, `有効なポート番号を入力してください ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
           else {
             host = parsed[1];
             if (parsed.length > 2) port = parseInt(parsed[2]);
             if (port != null && !config.allowCustomPorts) {
-              sendCustomMessage(client.gameClient, "You are not allowed to use custom server ports! /join <ip>", "red");
+              sendCustomMessage(client.gameClient, "カスタムサーバーポートの使用は許可されていません /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
               host = null;
               port = null;
             } else if (!(await isValidIp(host))) {
-              sendCustomMessage(client.gameClient, "Invalid server address! /join <ip>" + (config.allowCustomPorts ? " [port]" : ""), "red");
+              sendCustomMessage(client.gameClient, "無効なサーバーアドレスです /join <ip>" + (config.allowCustomPorts ? " [ポート]" : ""), "red");
               host = null;
               port = null;
             } else {
@@ -945,7 +945,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
       }
       try {
         sendChatComponent(client.gameClient, {
-          text: `Joining server under ${client.gameClient.username}/Eaglercraft username! Run `,
+          text: `${client.gameClient.username} (Eaglercraftユーザー名) として参加していますプロキシコマンドの一覧を表示するには `,
           color: "aqua",
           extra: [
             {
@@ -953,7 +953,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
               color: "gold",
               hoverEvent: {
                 action: "show_text",
-                value: Enums.ChatColor.GOLD + "Click me to run this command!",
+                value: Enums.ChatColor.GOLD + "クリックしてコマンドを実行",
               },
               clickEvent: {
                 action: "run_command",
@@ -961,7 +961,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
               },
             },
             {
-              text: " for a list of proxy commands.",
+              text: " を実行してください。",
               color: "aqua",
             },
           ],
@@ -989,7 +989,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         if (!client.gameClient.ended) {
           client.gameClient.end(
             Enums.ChatColor.RED +
-              `Something went wrong whilst switching servers: ${err.message}${err.code == "ENOTFOUND" ? (host.includes(":") ? `\n${Enums.ChatColor.GRAY}Suggestion: Replace the : in your IP with a space.` : "\nIs that IP valid?") : ""}`
+            `Something went wrong whilst switching servers: ${err.message}${err.code == "ENOTFOUND" ? (host.includes(":") ? `\n${Enums.ChatColor.GRAY}Suggestion: Replace the : in your IP with a space.` : "\nIs that IP valid?") : ""}`
           );
         }
       }
@@ -997,7 +997,7 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
   } catch (err) {
     if (!client.gameClient.ended) {
       logger.error(`Error whilst processing user ${client.gameClient.username}: ${err.stack || err}`);
-      client.gameClient.end(Enums.ChatColor.YELLOW + "Something went wrong whilst processing your request. Please reconnect.");
+      client.gameClient.end(Enums.ChatColor.YELLOW + "リクエスト処理中にエラーが発生しました。再接続してください。");
     }
   }
 }

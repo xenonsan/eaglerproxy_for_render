@@ -56,18 +56,18 @@ server.on("login", async (client) => {
     } = undefined;
     if (host != undefined && Array.from(url.searchParams).length > 0) {
       if (!config.allowDirectConnectEndpoints) {
-        return proxyPlayer.disconnect(Enums.ChatColor.RED + "Direct connect endpoints are disabled");
+        return proxyPlayer.disconnect(Enums.ChatColor.RED + "ダイレクト接続エンドポイントは無効化されています");
       }
       if (config.disallowHypixel && /^(?:[\w-]+\.)?hypixel\.net$/.test(host)) {
-        return proxyPlayer.disconnect(Enums.ChatColor.RED + "Hypixel is disabled for this proxy");
+        return proxyPlayer.disconnect(Enums.ChatColor.RED + "このプロキシではHypixelは無効化されています");
       }
-      if (isNaN(Number(port)) && port != null) return proxyPlayer.disconnect(Enums.ChatColor.RED + "Bad port number");
+      if (isNaN(Number(port)) && port != null) return proxyPlayer.disconnect(Enums.ChatColor.RED + "無効なポート番号です");
       else if (port == null) port = "25565";
       if (!(await isValidIp(host))) {
-        return proxyPlayer.disconnect(Enums.ChatColor.RED + "Bad host");
+        return proxyPlayer.disconnect(Enums.ChatColor.RED + "無効なホストです");
       }
       if (type != "OFFLINE" && type != "ONLINE" && type != "THEALTENING" && type != null) {
-        return proxyPlayer.disconnect(Enums.ChatColor.RED + "Bad authType provided");
+        return proxyPlayer.disconnect(Enums.ChatColor.RED + "無効な認証タイプ(authType)が提供されました");
       } else if (type == null) type = undefined;
       type = type == undefined ? undefined : type == "OFFLINE" ? ConnectType.OFFLINE : type == "ONLINE" ? ConnectType.ONLINE : ConnectType.THEALTENING;
       let sess = undefined;
@@ -104,7 +104,7 @@ server.on("login", async (client) => {
     handleConnect(cs, params);
   } else {
     logger.warn(`Proxy player object is null for ${client.username}?!`);
-    client.end("Indirect connection to internal authentication server detected!");
+    client.end("内部認証サーバーへの間接的な接続が検出されました！");
   }
 });
 

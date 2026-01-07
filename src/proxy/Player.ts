@@ -193,7 +193,7 @@ export class Player extends EventEmitter {
         this.serverSerializer.createPacketBuffer({
           name: "chat",
           params: {
-            message: `${Enums.ChatColor.GRAY}Switching servers...`,
+            message: `${Enums.ChatColor.GRAY}サーバーを切り替えています...`,
             position: 1,
           },
         })
@@ -240,21 +240,21 @@ export class Player extends EventEmitter {
       let stream = false,
         uuid;
       const listener = (msg) => {
-          if (stream) {
-            client.writeRaw(msg);
-          }
-        },
+        if (stream) {
+          client.writeRaw(msg);
+        }
+      },
         errListener = (err) => {
           if (!stream) {
             rej(err);
           } else {
-            this.disconnect(`${Enums.ChatColor.RED}Something went wrong: ${err.stack ?? err}`);
+            this.disconnect(`${Enums.ChatColor.RED}エラーが発生しました: ${err.stack ?? err}`);
           }
         };
       setTimeout(() => {
         if (!stream && this.state != Enums.ClientState.DISCONNECTED) {
           client.end("Timed out waiting for server connection.");
-          this.disconnect(Enums.ChatColor.RED + "Timed out waiting for server connection!");
+          this.disconnect(Enums.ChatColor.RED + "サーバー接続待機中にタイムアウトしました！");
           throw new Error("Timed out waiting for server connection!");
         }
       }, 30000);
@@ -273,7 +273,7 @@ export class Player extends EventEmitter {
           let json;
           try {
             json = JSON.parse(packet.reason);
-          } catch {}
+          } catch { }
           if (json != null) {
             this._kickMessage = Chat.chatToPlainString(json);
           } else this._kickMessage = packet.reason;
@@ -283,7 +283,7 @@ export class Player extends EventEmitter {
           let json;
           try {
             json = JSON.parse(packet.reason);
-          } catch {}
+          } catch { }
           if (json != null) {
             this._kickMessage = Chat.chatToPlainString(json);
           } else this._kickMessage = packet.reason;

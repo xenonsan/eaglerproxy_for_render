@@ -155,12 +155,12 @@ export class Proxy extends EventEmitter {
       this._logger.warn(`HTTP server threw an error: ${err.stack}`);
     });
     process.on("beforeExit", () => {
-      this._logger.info("Cleaning up before exiting...");
-      this.players.forEach((plr) => plr.disconnect(Enums.ChatColor.YELLOW + "Proxy is shutting down."));
+      this._logger.info("終了前にクリーンアップしています...");
+      this.players.forEach((plr) => plr.disconnect(Enums.ChatColor.YELLOW + "プロキシをシャットダウンしています。"));
     });
     this.ratelimit = new ProxyRatelimitManager(this.config.ratelimits);
     this.pluginManager.emit("proxyFinishLoading", this, this.pluginManager);
-    this._logger.info(`Started WebSocket server and binded to ${this.config.bindHost} on port ${this.config.bindPort}.`);
+    this._logger.info(`WebSocketサーバーを起動し、${this.config.bindHost}のポート${this.config.bindPort}にバインドしました。`);
   }
 
   private _handleNonWSRequest(req: http.IncomingMessage, res: http.ServerResponse, config: Config["adapter"]) {
@@ -189,11 +189,10 @@ export class Proxy extends EventEmitter {
     setTimeout(() => {
       if (!handled) {
         this.initalHandlerLogger.warn(
-          `Disconnecting client ${
-            player ? player.username ?? `[/${(ws as any)._socket.remoteAddress}:${(ws as any)._socket.remotePort}` : `[/${(ws as any)._socket.remoteAddress}:${(ws as any)._socket.remotePort}`
+          `Disconnecting client ${player ? player.username ?? `[/${(ws as any)._socket.remoteAddress}:${(ws as any)._socket.remotePort}` : `[/${(ws as any)._socket.remoteAddress}:${(ws as any)._socket.remotePort}`
           } due to connection timing out.`
         );
-        if (player) player.disconnect(`${Enums.ChatColor.YELLOW} Your connection timed out whilst processing handshake, please try again.`);
+        if (player) player.disconnect(`${Enums.ChatColor.YELLOW}ハンドシェイク処理中に接続がタイムアウトしました。再度お試しください。`);
         else ws.close();
       }
     }, this.LOGIN_TIMEOUT);
@@ -246,17 +245,17 @@ export class Proxy extends EventEmitter {
         const rl = this.ratelimit.connect.consume(req.socket.remoteAddress);
         if (!rl.success) {
           handled = true;
-          player.disconnect(`${Enums.ChatColor.RED}You have been ratelimited!\nTry again in ${Enums.ChatColor.WHITE}${rl.retryIn / 1000}${Enums.ChatColor.RED} seconds`);
+          player.disconnect(`${Enums.ChatColor.RED}レート制限されました！\n${Enums.ChatColor.WHITE}${rl.retryIn / 1000}${Enums.ChatColor.RED}秒後に再度お試しください`);
           return;
         }
 
         const loginPacket = new CSLoginPacket().deserialize(firstPacket);
         player.state = Enums.ClientState.PRE_HANDSHAKE;
         if (loginPacket.gameVersion != VANILLA_PROTOCOL_VERSION) {
-          player.disconnect(`${Enums.ChatColor.RED}Please connect to this proxy on EaglercraftX 1.8.9.`);
+          player.disconnect(`${Enums.ChatColor.RED}EaglercraftX 1.8.9で接続してください。`);
           return;
         } else if (loginPacket.networkVersion != NETWORK_VERSION) {
-          player.disconnect(`${Enums.ChatColor.RED}Your EaglercraftX version is too ${loginPacket.networkVersion > NETWORK_VERSION ? "new" : "old"}! Please ${loginPacket.networkVersion > NETWORK_VERSION ? "downgrade" : "update"}.`);
+          player.disconnect(`${Enums.ChatColor.RED}EaglercraftXのバージョンが${loginPacket.networkVersion > NETWORK_VERSION ? "新しすぎます" : "古すぎます"}！${loginPacket.networkVersion > NETWORK_VERSION ? "ダウングレード" : "アップデート"}してください。`);
           return;
         }
         try {
@@ -268,22 +267,21 @@ export class Proxy extends EventEmitter {
         player.username = loginPacket.username;
         player.uuid = Util.generateUUIDFromPlayer(player.username);
         if (this.players.size > this.config.maxConcurrentClients) {
-          player.disconnect(`${Enums.ChatColor.YELLOW}Proxy is full! Please try again later.`);
+          player.disconnect(`${Enums.ChatColor.YELLOW}プロキシが満員です！後でもう一度お試しください。`);
           return;
         } else if (this.players.get(player.username) != null || this.players.get(`!phs.${player.uuid}`) != null) {
-          player.disconnect(`${Enums.ChatColor.YELLOW}Someone under your username (${player.username}) is already connected to the proxy!`);
+          player.disconnect(`${Enums.ChatColor.YELLOW}あなたのユーザー名(${player.username})は既にプロキシに接続されています！`);
           return;
         }
         this.players.set(`!phs.${player.uuid}`, player);
         this._logger.info(
-          `Player ${loginPacket.username} (${Util.generateUUIDFromPlayer(loginPacket.username)}) running ${loginPacket.brand}/${loginPacket.version} (net ver: ${loginPacket.networkVersion}, game ver: ${
-            loginPacket.gameVersion
+          `Player ${loginPacket.username} (${Util.generateUUIDFromPlayer(loginPacket.username)}) running ${loginPacket.brand}/${loginPacket.version} (net ver: ${loginPacket.networkVersion}, game ver: ${loginPacket.gameVersion
           }) is attempting to connect!`
         );
         player.write(new SCIdentifyPacket());
         const usernamePacket: CSUsernamePacket = (await player.read(Enums.PacketId.CSUsernamePacket)) as any;
         if (usernamePacket.username !== player.username) {
-          player.disconnect(`${Enums.ChatColor.YELLOW}Failed to complete handshake. Your game version may be too old or too new.`);
+          player.disconnect(`${Enums.ChatColor.YELLOW}ハンドシェイクの完了に失敗しました。ゲームバージョンが古すぎるか新しすぎる可能性があります。`);
           return;
         }
         const syncUuid = new SCSyncUuidPacket();
@@ -306,7 +304,7 @@ export class Proxy extends EventEmitter {
         player.initListeners();
         this._bindListenersToPlayer(player);
         player.state = Enums.ClientState.POST_HANDSHAKE;
-        this._logger.info(`Handshake Success! Connecting player ${player.username} to server...`);
+        this._logger.info(`ハンドシェイク成功！プレイヤー ${player.username} をサーバーに接続しています...`);
         handled = true;
 
         await player.connect({
@@ -314,7 +312,7 @@ export class Proxy extends EventEmitter {
           port: this.config.server.port,
           username: player.username,
         });
-        this._logger.info(`Player ${player.username} successfully connected to server.`);
+        this._logger.info(`プレイヤー ${player.username} がサーバーに正常に接続しました。`);
         this.emit("playerConnect", player);
       }
     } catch (err) {
@@ -331,7 +329,7 @@ export class Proxy extends EventEmitter {
     player.on("disconnect", () => {
       if (this.players.has(player.username)) this.players.delete(player.username);
       this.initalHandlerLogger.info(`DISCONNECT ${player.username} <=> DISCONNECTED`);
-      if (!sentDisconnectMsg) this._logger.info(`Player ${player.username} (${player.uuid}) disconnected from the proxy server.`);
+      if (!sentDisconnectMsg) this._logger.info(`プレイヤー ${player.username} (${player.uuid}) がプロキシサーバーから切断しました。`);
     });
     player.on("proxyPacket", async (packet) => {
       if (packet.packetId == Enums.PacketId.CSChannelMessagePacket) {

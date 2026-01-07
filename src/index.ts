@@ -16,10 +16,10 @@ let proxy: Proxy;
 global.CONFIG = config;
 config.adapter.useNatives = config.adapter.useNatives ?? true;
 
-logger.info("Loading libraries...");
+logger.info("ライブラリを読み込んでいます...");
 await ImageEditor.loadLibraries(config.adapter.useNatives);
 
-logger.info("Loading plugins...");
+logger.info("プラグインを読み込んでいます...");
 const pluginManager = new PluginManager(join(dirname(fileURLToPath(import.meta.url)), "plugins"));
 global.PLUGIN_MANAGER = pluginManager;
 await pluginManager.loadPlugins();
@@ -27,6 +27,6 @@ await pluginManager.loadPlugins();
 proxy = new Proxy(config.adapter, pluginManager);
 pluginManager.proxy = proxy;
 
-logger.info(`Launching ${PROXY_BRANDING}...`);
+logger.info(`${PROXY_BRANDING} を起動しています...`);
 await proxy.init();
 global.PROXY = proxy;

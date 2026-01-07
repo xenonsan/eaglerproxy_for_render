@@ -18,7 +18,7 @@ const METADATA: {
   incompatibilities: any[];
 } = JSON.parse((await fs.readFile(join(dirname(fileURLToPath(import.meta.url)), "metadata.json"))).toString());
 
-export function sendPluginChatMessage(client: Player, ...components: { text: string; color: string; [otherFields: string]: any }[]) {
+export function sendPluginChatMessage(client: Player, ...components: { text: string; color: string;[otherFields: string]: any }[]) {
   if (components.length == 0) throw new Error("There must be one or more passed components!");
   else {
     client.ws.send(
@@ -40,7 +40,7 @@ export function handleCommand(sender: Player, cmd: string): void {
   switch (cmd.toLowerCase().split(/ /gim)[0]) {
     default:
       sendPluginChatMessage(sender, {
-        text: `"${cmd.split(/ /gim, 1)[0]}" is not a valid command!`,
+        text: `"${cmd.split(/ /gim, 1)[0]}" は有効なコマンドではありません`,
         color: "red",
       });
       break;
@@ -62,7 +62,7 @@ export function helpCommand(sender: Player) {
     color: "yellow",
   });
   sendPluginChatMessage(sender, {
-    text: "Available Commands:",
+    text: "利用可能なコマンド:",
     color: "aqua",
   });
   sendPluginChatMessage(sender, {
@@ -70,7 +70,7 @@ export function helpCommand(sender: Player) {
     color: "light_green",
     hoverEvent: {
       action: "show_text",
-      value: Enums.ChatColor.GOLD + "Click me to run this command!",
+      value: Enums.ChatColor.GOLD + "クリックしてコマンドを実行",
     },
     clickEvent: {
       action: "run_command",
@@ -78,7 +78,7 @@ export function helpCommand(sender: Player) {
     },
     extra: [
       {
-        text: " - Prints out a list of commmands",
+        text: " - コマンド一覧を表示",
         color: "aqua",
       },
     ],
@@ -88,7 +88,7 @@ export function helpCommand(sender: Player) {
     color: "light_green",
     hoverEvent: {
       action: "show_text",
-      value: Enums.ChatColor.GOLD + "Click me to run this command!",
+      value: Enums.ChatColor.GOLD + "クリックしてコマンドを実行",
     },
     clickEvent: {
       action: "run_command",
@@ -96,7 +96,7 @@ export function helpCommand(sender: Player) {
     },
     extra: [
       {
-        text: " - Toggles whether or not particles should be rendered/shown on the client. Turning this on can potentially boost FPS.",
+        text: " - パーティクル表示の切り替え",
         color: "aqua",
       },
     ],
@@ -106,7 +106,7 @@ export function helpCommand(sender: Player) {
     color: "light_green",
     hoverEvent: {
       action: "show_text",
-      value: Enums.ChatColor.GOLD + "Click me to paste this command to chat!",
+      value: Enums.ChatColor.GOLD + "クリックしてコマンドをチャットに貼り付け",
     },
     clickEvent: {
       action: "suggest_command",
@@ -114,13 +114,13 @@ export function helpCommand(sender: Player) {
     },
     extra: [
       {
-        text: " - Switch between servers on-the-fly. Switching to servers in online mode requires logging in via online mode or TheAltening!",
+        text: " - サーバーを切り替え",
         color: "aqua",
       },
     ],
   });
   sendPluginChatMessage(sender, {
-    text: `Running ${METADATA.name} on version v${METADATA.version}.`,
+    text: `${METADATA.name} バージョン v${METADATA.version} を実行中。`,
     color: "gray",
   });
   sendPluginChatMessage(sender, {
@@ -135,7 +135,7 @@ export function toggleParticles(sender: Player) {
     sender.removeListener("vanillaPacket", listener);
     (sender as any)._particleListener = undefined;
     sendPluginChatMessage(sender, {
-      text: "Disabled particle hider!",
+      text: "パーティクル表示を有効にしました！",
       color: "red",
     });
   } else {
@@ -152,7 +152,7 @@ export function toggleParticles(sender: Player) {
     };
     sender.on("vanillaPacket", (sender as any)._particleListener);
     sendPluginChatMessage(sender, {
-      text: "Enabled particle hider!",
+      text: "パーティクル表示を無効にしました（FPS向上）！",
       color: "green",
     });
   }
@@ -161,7 +161,7 @@ export function toggleParticles(sender: Player) {
 export async function switchServer(cmd: string, sender: Player) {
   if ((sender as any)._serverSwitchLock) {
     return sendPluginChatMessage(sender, {
-      text: `There is already a pending server switch - please wait, and be patient!`,
+      text: `現在サーバー切り替え処理中です。しばらくお待ちください！`,
       color: "red",
     });
   }
@@ -171,7 +171,7 @@ export async function switchServer(cmd: string, sender: Player) {
     port = split[2];
   if (mode != "online" && mode != "offline") {
     return sendPluginChatMessage(sender, {
-      text: `Invalid command usage - please provide a valid mode! `,
+      text: `無効なコマンド形式です - 有効なモードを指定してください！ `,
       color: "red",
       extra: [
         {
@@ -183,7 +183,7 @@ export async function switchServer(cmd: string, sender: Player) {
   }
   if (ip == null) {
     return sendPluginChatMessage(sender, {
-      text: `Invalid command usage - please provide a valid IP or hostname (like example.com, 1.2.3.4, etc.)! `,
+      text: `無効なコマンド形式です - 有効なIPまたはホスト名（例: example.com, 1.2.3.4など）を指定してください！ `,
       color: "red",
       extra: [
         {
@@ -195,7 +195,7 @@ export async function switchServer(cmd: string, sender: Player) {
   }
   if (port != null && (isNaN(Number(port)) || Number(port) < 1 || Number(port) > 65535)) {
     return sendPluginChatMessage(sender, {
-      text: `Invalid command usage - a port must be a number above 0 and below 65536! `,
+      text: `無効なコマンド形式です - ポート番号は0より大きく65536未満（0～65535）である必要があります！ `,
       color: "red",
       extra: [
         {
@@ -207,7 +207,7 @@ export async function switchServer(cmd: string, sender: Player) {
   }
   if (port != null && !config.allowCustomPorts) {
     return sendPluginChatMessage(sender, {
-      text: `Invalid command usage - custom server ports are disabled on this proxy instance! `,
+      text: `無効なコマンド形式です - このプロキシインスタンスではカスタムサーバーポートは無効化されています！ `,
       color: "red",
       extra: [
         {
@@ -224,27 +224,27 @@ export async function switchServer(cmd: string, sender: Player) {
   if (connectionType == ConnectType.ONLINE) {
     if ((sender as any)._onlineSession == null) {
       sendPluginChatMessage(sender, {
-        text: `You either connected to this proxy under offline mode, or your online/TheAltening session has timed out and has become invalid.`,
+        text: `オフラインモードで接続しているか、オンライン/TheAlteningのセッションがタイムアウトして無効になっています。`,
         color: "red",
       });
       return sendPluginChatMessage(sender, {
-        text: `To switch to online servers, please reconnect and log-in through online/TheAltening mode.`,
+        text: `オンラインサーバーに切り替えるには、再接続してオンライン/TheAlteningモードでログインしてください。`,
         color: "red",
       });
     } else {
       if (!(await isValidIp(addr))) {
         return sendPluginChatMessage(sender, {
-          text: "This IP is invalid!",
+          text: "このIPは無効です！",
           color: "red",
         });
       }
       const savedAuth = (sender as any)._onlineSession;
       sendPluginChatMessage(sender, {
-        text: `(joining server under ${savedAuth.username}/your ${savedAuth.isTheAltening ? "TheAltening" : "Minecraft"} account's username)`,
+        text: `(${savedAuth.username} / あなたの ${savedAuth.isTheAltening ? "TheAltening" : "Minecraft"} アカウント名としてサーバーに参加しています)`,
         color: "aqua",
       });
       sendPluginChatMessage(sender, {
-        text: "Attempting to switch servers, please wait... (if you don't get connected to the target server after a while, the server might not be a Minecraft server at all. Reconnect and try again.)",
+        text: "サーバーを切り替えています。しばらくお待ちください...（しばらく経っても接続されない場合、そのサーバーはMinecraftサーバーではない可能性があります。再接続してやり直してください。）",
         color: "gray",
       });
       (sender as any)._serverSwitchLock = true;
@@ -263,18 +263,18 @@ export async function switchServer(cmd: string, sender: Player) {
         if (sender.state! != Enums.ClientState.DISCONNECTED) {
           sender.disconnect(
             Enums.ChatColor.RED +
-              `Something went wrong whilst switching servers: ${err.message}${err.code == "ENOTFOUND" ? (addr.includes(":") ? `\n${Enums.ChatColor.GRAY}Suggestion: Replace the : in your IP with a space.` : "\nIs that IP valid?") : ""}`
+            `サーバー切り替え中にエラーが発生しました: ${err.message}${err.code == "ENOTFOUND" ? (addr.includes(":") ? `\n${Enums.ChatColor.GRAY}ヒント: IP内の : をスペースに置き換えてみてください。` : "\nそのIPは有効ですか？") : ""}`
           );
         }
       }
     }
   } else {
     sendPluginChatMessage(sender, {
-      text: `(joining server under ${sender.username}/Eaglercraft username)`,
+      text: `(${sender.username} / Eaglercraftユーザー名としてサーバーに参加しています)`,
       color: "aqua",
     });
     sendPluginChatMessage(sender, {
-      text: "Attempting to switch servers, please wait... (if you don't get connected to the target server for a while, the server might be online only)",
+      text: "サーバーを切り替えています。しばらくお待ちください...（しばらく経っても接続されない場合、そのサーバーはオンラインモード専用である可能性があります）",
       color: "gray",
     });
     try {
@@ -294,7 +294,7 @@ export async function switchServer(cmd: string, sender: Player) {
       if (sender.state! != Enums.ClientState.DISCONNECTED) {
         sender.disconnect(
           Enums.ChatColor.RED +
-            `Something went wrong whilst switching servers: ${err.message}${err.code == "ENOTFOUND" ? (addr.includes(":") ? `\n${Enums.ChatColor.GRAY}Suggestion: Replace the : in your IP with a space.` : "\nIs that IP valid?") : ""}`
+          `サーバー切り替え中にエラーが発生しました: ${err.message}${err.code == "ENOTFOUND" ? (addr.includes(":") ? `\n${Enums.ChatColor.GRAY}ヒント: IP内の : をスペースに置き換えてみてください。` : "\nそのIPは有効ですか？") : ""}`
         );
       }
     }
