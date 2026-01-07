@@ -4,154 +4,137 @@ import { config } from "../config.js";
 const LINK_STR = `
 <!doctype html>
 <html lang="ja">
-  <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EagPAAS - サーバー接続</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Connect - EaglerProxy</title>
     <style>
         :root {
-            --primary: #10b981;
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg: #ffffff;
+            --text: #111827;
+            --muted: #6b7280;
+            --accent: #059669;
+            --border: #e5e7eb;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --text: #f9fafb;
+                --muted: #9ca3af;
+                --border: #262626;
+            }
+        }
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
             color: var(--text);
+            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            padding: 1rem;
+            line-height: 1.5;
         }
         .container {
-            max-width: 600px;
-            width: 100%;
-            padding: 2.5rem;
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.8s ease-out;
+            max-width: 480px;
+            width: 90%;
+            padding: 2rem;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        h1 { font-size: 2rem; font-weight: 600; margin-bottom: 1.5rem; text-align: center; }
-        .info-card {
-            background: rgba(15, 23, 42, 0.8);
-            padding: 1.5rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.025em; }
+        p { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+        .box {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
             margin-bottom: 1.5rem;
         }
-        .label { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem; display: block; }
+        .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.5rem; display: block; }
         code {
-            font-family: 'Consolas', monospace;
-            color: var(--primary);
-            font-size: 1rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.85rem;
+            color: var(--accent);
             word-break: break-all;
             display: block;
             margin-bottom: 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 0.75rem;
-            border-radius: 8px;
         }
-        .copy-btn {
-            background: var(--primary);
-            color: white;
+        .btn {
+            background: var(--text);
+            color: var(--bg);
             border: none;
-            padding: 0.6rem 1rem;
-            border-radius: 10px;
-            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.2s;
+            cursor: pointer;
             width: 100%;
         }
-        .copy-btn:hover { opacity: 0.9; transform: translateY(-1px); background: #059669; }
-        .copy-btn:active { transform: translateY(0); }
-        .warning {
-            color: #fbbf24;
-            font-size: 0.9rem;
+        .btn:hover { opacity: 0.85; }
+        .warn {
+            font-size: 0.875rem;
+            color: #d97706;
+            border: 1px solid rgba(217, 119, 6, 0.2);
+            background: rgba(217, 119, 6, 0.05);
             padding: 1rem;
-            background: rgba(251, 191, 36, 0.1);
-            border-radius: 12px;
-            margin-top: 1.5rem;
-            line-height: 1.5;
+            border-radius: 8px;
+            margin-top: 2rem;
         }
     </style>
-    <script type="text/javascript">
+    <script>
       window.addEventListener("load", () => {
-        let param = new URLSearchParams(window.location.search),
-            url = param.get("url")
-        if (url == null) {
-            document.body.innerHTML = "<div class='container'><h1>エラー</h1><p style='text-align:center'>URLが見つかりません</p></div>";
+        const u = new URLSearchParams(window.location.search).get("url");
+        if (!u) {
+            document.body.innerHTML = "URL missing";
             return;
         }
         
         try {
-            const parsed = new URL(url), session = JSON.parse(parsed.searchParams.get("session"))
-            if (session.expires_on < Date.now()) {
-                document.getElementById("status-msg").innerHTML = "⚠️ セッションの期限が切れています！新しいリンクを取得してください。";
-                document.getElementById("status-msg").style.color = "#ef4444";
+            const p = new URL(u), s = JSON.parse(p.searchParams.get("session"));
+            if (s.expires_on < Date.now()) {
+                document.getElementById("status").innerText = "⚠️ セッションの期限が切れています。リロードして新しいリンクを取得してください。";
+                document.getElementById("status").style.color = "#dc2626";
             }
-        } catch (_e) {
-            console.error(_e)
-        }
+        } catch (e) {}
       
-        const finalUrl = url.replace("wss:", window.location.protocol == "https:" ? "wss:" : "ws:");
-        document.getElementById("connect-url").innerText = finalUrl;
+        const f = u.replace("wss:", window.location.protocol == "https:" ? "wss:" : "ws:");
+        document.getElementById("c1").innerText = f;
         
-        const parsedURL = new URL(url)
-        document.getElementById("connect-url-vanilla").innerText = 
-            "vanilla+online://" + parsedURL.searchParams.get("ip") + ":" + parsedURL.searchParams.get("port") + "/?session=" + parsedURL.searchParams.get("session")
-      })
+        const v = new URL(u);
+        document.getElementById("c2").innerText = 
+            "vanilla+online://" + v.searchParams.get("ip") + ":" + v.searchParams.get("port") + "/?session=" + v.searchParams.get("session");
+      });
 
-      function copyText(id, btn) {
-          const text = document.getElementById(id).innerText;
-          navigator.clipboard.writeText(text).then(() => {
-              const original = btn.innerText;
-              btn.innerText = "コピー完了！";
-              setTimeout(() => btn.innerText = original, 2000);
+      function copy(id, b) {
+          const t = document.getElementById(id).innerText;
+          navigator.clipboard.writeText(t).then(() => {
+              const o = b.innerText;
+              b.innerText = "コピーしました";
+              setTimeout(() => b.innerText = o, 2000);
           });
       }
     </script>
-  </head>
-  <body>
+</head>
+<body>
     <div class="container">
       <h1>サーバーに接続</h1>
-      <p id="status-msg" style="text-align: center; margin-bottom: 1.5rem; color: var(--text-muted);">
-        以下のURLを使用して EaglercraftX から接続してください。
-      </p>
+      <p id="status">以下のアドレスを使用して EaglercraftX から接続してください。</p>
 
-      <div class="info-card">
-        <span class="label">標準接続URL (Direct Connect 用)</span>
-        <code id="connect-url">読み込み中...</code>
-        <button class="copy-btn" onclick="copyText('connect-url', this)">URLをコピー</button>
+      <div class="box">
+        <span class="label">標準接続URL</span>
+        <code id="c1">loading...</code>
+        <button class="btn" onclick="copy('c1', this)">コピー</button>
       </div>
 
-      <div class="info-card">
-        <span class="label">Vanilla プロトコル対応URL (対応クライアント用)</span>
-        <code id="connect-url-vanilla">読み込み中...</code>
-        <button class="copy-btn" onclick="copyText('connect-url-vanilla', this)">URLをコピー</button>
+      <div class="box">
+        <span class="label">Vanilla プロトコル対応URL</span>
+        <code id="c2">loading...</code>
+        <button class="btn" onclick="copy('c2', this)">コピー</button>
       </div>
 
-      <div class="warning">
-        <strong>注意:</strong> セッションには有効期限があります。期限が切れた場合は、再度プロキシ経由でログインする必要があります。
+      <div class="warn">
+        <strong>セッションについて:</strong> セッションには有効期限があります。期限切れの場合は再度ログインが必要です。
       </div>
     </div>
-  </body>
+</body>
 </html>
 `;
 
