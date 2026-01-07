@@ -194,7 +194,7 @@ export function handleConnect(client: ClientState, additionalParams: { ip: strin
 
   client.gameClient.write("playerlist_header", {
     header: JSON.stringify({
-      text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
+      text: ` ${Enums.ChatColor.GOLD}EaglerProxy Server Manager `,
     }),
     footer: JSON.stringify({
       text: `${Enums.ChatColor.GOLD}指示をお待ちください。`,
@@ -233,6 +233,12 @@ export function sendMessage(client: Client, msg: string) {
     message: JSON.stringify({ text: msg }),
     position: 1,
   });
+}
+
+export function clearChat(client: Client) {
+  for (let i = 0; i < 100; i++) {
+    sendMessage(client, " ");
+  }
 }
 
 export function sendCustomMessage(client: Client, msg: string, color: string, ...components: { text: string; color: string }[]) {
@@ -299,7 +305,7 @@ export function updateState(client: Client, newState: "CONNECTION_TYPE" | "AUTH_
     case "CONNECTION_TYPE":
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Server Manager `,
         }),
         footer: JSON.stringify({
           text: `${Enums.ChatColor.RED}接続タイプを選択してください: 1 = オンライン, 2 = オフライン, 3 = TheAltening`,
@@ -309,7 +315,7 @@ export function updateState(client: Client, newState: "CONNECTION_TYPE" | "AUTH_
     case "AUTH_THEALTENING":
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Server Manager `,
         }),
         footer: JSON.stringify({
           text: `${Enums.ChatColor.RED}panel.thealtening.com/#generator${Enums.ChatColor.GOLD} | ${Enums.ChatColor.RED}/login <alt_token>`,
@@ -320,7 +326,7 @@ export function updateState(client: Client, newState: "CONNECTION_TYPE" | "AUTH_
       if (code == null || uri == null) throw new Error("Missing code/uri required for title message type AUTH");
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Server Manager `,
         }),
         footer: JSON.stringify({
           text: `${Enums.ChatColor.RED}${uri}${Enums.ChatColor.GOLD} | コード: ${Enums.ChatColor.RED}${code}`,
@@ -330,7 +336,7 @@ export function updateState(client: Client, newState: "CONNECTION_TYPE" | "AUTH_
     case "SERVER":
       client.write("playerlist_header", {
         header: JSON.stringify({
-          text: ` ${Enums.ChatColor.GOLD}EaglerProxy 認証サーバー `,
+          text: ` ${Enums.ChatColor.GOLD}EaglerProxy Server Manager `,
         }),
         footer: JSON.stringify({
           text: `${Enums.ChatColor.RED}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}`,
@@ -351,6 +357,7 @@ export function printSessionMessage(client: ClientState, session: any, proxySess
   secureURL.protocol = "https:";
   const https = secureURL.toString();
 
+  clearChat(client.gameClient);
   sendChatComponent(client.gameClient, {
     text: "ログインしましたこのアカウントを引き続き使用するには、こちらのサーバーURLを使用してください（各リンクを試してください）: ",
     color: "green",
@@ -400,6 +407,87 @@ export function playSelectSound(client: Client) {
   });
 }
 
+async function showServerList(client: ClientState) {
+  const savedServers = serverStore.getServers(client.gameClient.username);
+  clearChat(client.gameClient);
+
+  sendCustomMessage(client.gameClient, SEPARATOR, "yellow");
+  sendCustomMessage(client.gameClient, "=== 直接接続 ===", "gold");
+  sendChatComponent(client.gameClient, {
+    text: "直接サーバーに接続 ",
+    color: "white",
+    extra: [
+      {
+        text: "[接続]",
+        color: "green",
+        clickEvent: {
+          action: "run_command",
+          value: "/server direct-join"
+        },
+        hoverEvent: {
+          action: "show_text",
+          value: Enums.ChatColor.GREEN + "クリックして直接接続ウィザードを開始"
+        }
+      }
+    ]
+  });
+
+  if (savedServers.length > 0) {
+    sendCustomMessage(client.gameClient, " ", "white");
+    sendCustomMessage(client.gameClient, "=== 保存されたサーバー ===", "gold");
+    savedServers.forEach(server => {
+      sendChatComponent(client.gameClient, {
+        text: `[${server.name}] `,
+        color: "aqua",
+        clickEvent: {
+          action: "run_command",
+          value: `/connect-bookmark ${server.name}`,
+        },
+        hoverEvent: {
+          action: "show_text",
+          value: Enums.ChatColor.GOLD + `クリックして接続 (${server.type || "ONLINE"})`
+        },
+        extra: [
+          {
+            text: `(${server.type || "ONLINE"})`,
+            color: "gray"
+          }
+        ]
+      });
+    });
+  } else {
+    sendCustomMessage(client.gameClient, " ", "white");
+    sendCustomMessage(client.gameClient, "保存されたサーバーはありません。[管理] から追加できます。", "gray");
+  }
+
+  sendCustomMessage(client.gameClient, " ", "reset");
+  sendChatComponent(client.gameClient, {
+    text: "新規追加: /server add <名前> <IP> [ポート] [online/offline]",
+    color: "gray",
+    clickEvent: {
+      action: "suggest_command",
+      value: "/server add "
+    },
+    hoverEvent: {
+      action: "show_text",
+      value: Enums.ChatColor.YELLOW + "クリックしてコマンドを入力"
+    }
+  });
+  sendChatComponent(client.gameClient, {
+    text: "               [管理メニューを開く]",
+    color: "gold",
+    clickEvent: {
+      action: "run_command",
+      value: "/server manage"
+    },
+    hoverEvent: {
+      action: "show_text",
+      value: Enums.ChatColor.YELLOW + "クリックして管理メニューを開く"
+    }
+  });
+  sendCustomMessage(client.gameClient, " ", "white");
+}
+
 export async function onConnect(client: ClientState, metadata?: { ip: string; port: number; mode?: ConnectType; session?: object }) {
   try {
     client.state = ConnectionState.AUTH;
@@ -437,73 +525,19 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
 
     let chosenOption: ConnectType | null = null;
     if (!metadata || metadata.mode == null) {
-      // Display Info
-      sendCustomMessage(client.gameClient, SEPARATOR, "yellow");
-      sendCustomMessage(client.gameClient, "接続するサーバーを選択してください。", "gold");
-      sendCustomMessage(client.gameClient, "保存されたブックマークをクリックするか、以下のコマンドを使用してください:", "gray");
-      sendChatComponent(client.gameClient, {
-        text: `/server join <ip> [online|offline]`,
-        color: "aqua",
-        hoverEvent: {
-          action: "show_text",
-          value: Enums.ChatColor.GRAY + "クリックしてコマンドをコピー"
-        },
-        clickEvent: {
-          action: "suggest_command",
-          value: `/server join `
-        }
-      });
-
       // Display Saved Servers
       await serverStore.load();
-      const savedServers = serverStore.getServers(client.gameClient.username);
-      if (savedServers.length > 0) {
-        sendCustomMessage(client.gameClient, " ", "white");
-        sendCustomMessage(client.gameClient, "=== 保存されたサーバー ===", "gold");
-        savedServers.forEach(server => {
-          sendChatComponent(client.gameClient, {
-            text: `[${server.name}] `,
-            color: "aqua",
-            clickEvent: {
-              action: "run_command",
-              value: `/connect-bookmark ${server.name}`,
-            },
-            hoverEvent: {
-              action: "show_text",
-              value: Enums.ChatColor.GOLD + `クリックして接続 (${server.type || "ONLINE"})`
-            },
-            extra: [
-              {
-                text: `(${server.type || "ONLINE"})`,
-                color: "gray"
-              }
-            ]
-          });
-        });
-        sendCustomMessage(client.gameClient, " ", "reset");
-        sendChatComponent(client.gameClient, {
-          text: "新規追加: /server add <名前> <IP> [ポート] [online/offline]",
-          color: "gray",
-          clickEvent: {
-            action: "suggest_command",
-            value: "/server add "
-          },
-          hoverEvent: {
-            action: "show_text",
-            value: Enums.ChatColor.YELLOW + "クリックしてコマンドを入力"
-          }
-        });
-        sendCustomMessage(client.gameClient, " ", "white");
-      }
+      await showServerList(client);
 
       updateState(client.gameClient, "CONNECTION_TYPE");
 
       while (true) {
         const option = await awaitCommand(client.gameClient, (msg) => true);
+        const currentSavedServers = serverStore.getServers(client.gameClient.username);
 
         if (option.startsWith("/connect-bookmark")) {
           const name = option.split(" ")[1];
-          const server = savedServers.find(s => s.name === name);
+          const server = currentSavedServers.find(s => s.name === name);
           if (server) {
             // Initialize metadata if it doesn't exist so we can set properties
             if (!metadata) metadata = { ip: "", port: 0 };
@@ -519,6 +553,62 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
             sendCustomMessage(client.gameClient, "指定されたサーバーが見つかりません。", "red");
             continue;
           }
+        }
+
+        if (option.startsWith("/server manage")) {
+          await handleServerManagement(client);
+          // Reload and show list after management
+          await showServerList(client);
+          continue;
+        }
+
+        if (option.startsWith("/server direct-join")) {
+          sendCustomMessage(client.gameClient, "接続先のIPアドレスを入力して送信してください (cancel で中止):", "yellow");
+          const ip = await awaitCommand(client.gameClient, () => true);
+          if (ip.toLowerCase() === "cancel") {
+            await showServerList(client);
+            continue;
+          }
+
+          sendCustomMessage(client.gameClient, "ポート番号を入力してください (- でスキップ、cancel で中止):", "yellow");
+          let portStr = await awaitCommand(client.gameClient, () => true);
+          if (portStr.toLowerCase() === "cancel") {
+            await showServerList(client);
+            continue;
+          }
+          let port = 25565;
+          if (portStr !== "-") {
+            let parsed = parseInt(portStr);
+            if (!isNaN(parsed)) port = parsed;
+          }
+
+          sendCustomMessage(client.gameClient, "どちらかを選択してください (cancel で中止):", "yellow");
+          sendChatComponent(client.gameClient, {
+            text: " [オフライン] ",
+            color: "gray",
+            clickEvent: { action: "run_command", value: "offline" },
+            hoverEvent: { action: "show_text", value: "オフラインモード (クラックド/Eaglercraft)" },
+            extra: [{
+              text: " [オンライン] ",
+              color: "green",
+              clickEvent: { action: "run_command", value: "online" },
+              hoverEvent: { action: "show_text", value: "オンラインモード (Premium/Mojang)" }
+            }]
+          });
+          const modeStr = await awaitCommand(client.gameClient, msg => msg === "online" || msg === "offline" || msg.toLowerCase() === "cancel");
+          if (modeStr.toLowerCase() === "cancel") {
+            await showServerList(client);
+            continue;
+          }
+
+          if (!metadata) metadata = { ip: "", port: 0 };
+          metadata.ip = ip;
+          metadata.port = port;
+          metadata.mode = modeStr === "online" ? ConnectType.ONLINE : ConnectType.OFFLINE;
+          chosenOption = metadata.mode;
+
+          sendCustomMessage(client.gameClient, `${ip}:${port} (${metadata.mode}) に接続します...`, "green");
+          break;
         }
 
         // Handle direct join command: /server join <ip> [online/offline] [port]
@@ -1025,6 +1115,139 @@ export function generateSpawnChunk(): Chunk.PCChunk {
   chunk.setBlockLight(new Vec3(8, 66, 8), 15);
   return chunk;
 }
+
+async function handleServerManagement(client: ClientState) {
+  while (true) {
+    // Show Menu
+    clearChat(client.gameClient);
+    sendCustomMessage(client.gameClient, " ", "reset");
+    sendCustomMessage(client.gameClient, "=== サーバー管理 ===", "gold");
+    sendChatComponent(client.gameClient, {
+      text: " [新規作成] ",
+      color: "green",
+      clickEvent: { action: "run_command", value: "/server manage create" },
+      hoverEvent: { action: "show_text", value: "新しいサーバーを追加します" },
+      extra: [
+        {
+          text: " [削除] ",
+          color: "red",
+          clickEvent: { action: "run_command", value: "/server manage delete" },
+          hoverEvent: { action: "show_text", value: "サーバーを削除します" }
+        },
+        {
+          text: " [戻る] ",
+          color: "gray",
+          clickEvent: { action: "run_command", value: "/server manage back" },
+          hoverEvent: { action: "show_text", value: "メニューに戻る" }
+        }
+      ]
+    });
+
+    const choice = await awaitCommand(client.gameClient, msg => msg.startsWith("/server manage "));
+    const action = choice.split(" ")[2];
+
+    if (action === "back") return;
+
+    if (action === "create") {
+      // Wizard
+      sendCustomMessage(client.gameClient, "サーバーの名前を入力して送信してください (cancel で中止):", "yellow");
+      const name = await awaitCommand(client.gameClient, () => true);
+      if (name.toLowerCase() === "cancel") {
+        sendCustomMessage(client.gameClient, "作成をキャンセルしました。", "gray");
+        continue;
+      }
+
+      sendCustomMessage(client.gameClient, "IPアドレスを入力して送信してください (cancel で中止):", "yellow");
+      const ip = await awaitCommand(client.gameClient, () => true);
+      if (ip.toLowerCase() === "cancel") {
+        sendCustomMessage(client.gameClient, "作成をキャンセルしました。", "gray");
+        continue;
+      }
+
+      sendCustomMessage(client.gameClient, "ポート番号を入力してください (- でスキップ、cancel で中止):", "yellow");
+      let portStr = await awaitCommand(client.gameClient, () => true);
+      if (portStr.toLowerCase() === "cancel") {
+        sendCustomMessage(client.gameClient, "作成をキャンセルしました。", "gray");
+        continue;
+      }
+      let port = 25565;
+      if (portStr !== "-") {
+        let parsed = parseInt(portStr);
+        if (isNaN(parsed)) {
+          sendCustomMessage(client.gameClient, "無効なポート番号です。デフォルト(25565)を使用します。", "red");
+          port = 25565;
+        } else {
+          port = parsed;
+        }
+      }
+
+      sendCustomMessage(client.gameClient, "どちらかを選択してください (cancel で中止):", "yellow");
+      sendChatComponent(client.gameClient, {
+        text: " [オフライン] ",
+        color: "gray",
+        clickEvent: { action: "run_command", value: "offline" },
+        hoverEvent: { action: "show_text", value: "オフラインモード (クラックド/Eaglercraft)" },
+        extra: [{
+          text: " [オンライン] ",
+          color: "green",
+          clickEvent: { action: "run_command", value: "online" },
+          hoverEvent: { action: "show_text", value: "オンラインモード (Premium/Mojang)" }
+        }]
+      });
+      const modeStr = await awaitCommand(client.gameClient, msg => msg === "online" || msg === "offline" || msg.toLowerCase() === "cancel");
+      if (modeStr.toLowerCase() === "cancel") {
+        sendCustomMessage(client.gameClient, "作成をキャンセルしました。", "gray");
+        continue;
+      }
+
+      await serverStore.addServer(client.gameClient.username, {
+        name, ip, port, type: modeStr === "online" ? ConnectType.ONLINE : ConnectType.OFFLINE
+      });
+      sendCustomMessage(client.gameClient, `サーバー ${name} を追加しました！`, "green");
+      await new Promise(res => setTimeout(res, 1000));
+    }
+
+    if (action === "delete") {
+      // Delete List
+      while (true) {
+        clearChat(client.gameClient);
+        const servers = serverStore.getServers(client.gameClient.username);
+        if (servers.length === 0) {
+          sendCustomMessage(client.gameClient, "削除できるサーバーがありません。", "red");
+          break;
+        }
+        sendCustomMessage(client.gameClient, "削除するサーバーの [削除] ボタンを押してください:", "gold");
+        servers.forEach(s => {
+          sendChatComponent(client.gameClient, {
+            text: `- ${s.name} `,
+            color: "white",
+            extra: [{
+              text: "[削除]",
+              color: "red",
+              clickEvent: { action: "run_command", value: `/server manage delete_confirm ${s.name}` },
+              hoverEvent: { action: "show_text", value: "クリックして削除" }
+            }]
+          })
+        });
+        sendChatComponent(client.gameClient, {
+          text: "[戻る]",
+          color: "gray",
+          clickEvent: { action: "run_command", value: "back" },
+          hoverEvent: { action: "show_text", value: "前のメニューに戻る" }
+        });
+
+        const delChoice = await awaitCommand(client.gameClient, () => true);
+        if (delChoice === "back") break;
+        if (delChoice.startsWith("/server manage delete_confirm ")) {
+          const nameToDelete = delChoice.split(" ").slice(3).join(" ");
+          await serverStore.removeServer(client.gameClient.username, nameToDelete);
+          sendCustomMessage(client.gameClient, `${nameToDelete} を削除しました。`, "green");
+        }
+      }
+    }
+  }
+}
+
 
 async function promptServerConnect(client: ClientState): Promise<{ host: string; port: number } | null> {
   await serverStore.load();

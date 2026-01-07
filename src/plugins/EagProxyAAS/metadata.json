@@ -1,5 +1,5 @@
 {
-  "name": "EaglerProxy as a Service",
+  "name": "EaglerProxy Server Manager",
   "id": "eagpaas",
   "version": "2.0.0",
   "entry_point": "index.js",

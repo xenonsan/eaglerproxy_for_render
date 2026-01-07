@@ -2,3 +2,16 @@ node_modules
 build
 .sourcehash
 .DS_Store
+skinCache
+data/
+.gemini/
+*.tsbuildinfo
+replit_runtime/
+.vscode/
+.config/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.replit
+replit.nix
+replit_launch.sh
