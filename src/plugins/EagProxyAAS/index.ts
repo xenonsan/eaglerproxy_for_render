@@ -29,12 +29,12 @@ logger.info(`(internal server port: ${config.bindInternalServerPort}, internal s
 
 logger.info("Starting internal server...");
 let server = createServer({
-    host: config.bindInternalServerIp,
-    port: config.bindInternalServerPort,
-    motdMsg: `${Enums.ChatColor.GOLD}EaglerProxy as a Service`,
-    "online-mode": false,
-    version: "1.8.9",
-  }),
+  host: config.bindInternalServerIp,
+  port: config.bindInternalServerPort,
+  motdMsg: `${Enums.ChatColor.GOLD}EaglerProxy as a Service`,
+  "online-mode": false,
+  version: "1.8.9",
+}),
   sGlobals: ServerGlobals = {
     server: server,
     players: new Map(),
@@ -54,7 +54,7 @@ server.on("login", async (client) => {
       mode: ConnectType;
       session: any | null;
     } = undefined;
-    if (host != undefined && url.searchParams.size > 0) {
+    if (host != undefined && Array.from(url.searchParams).length > 0) {
       if (!config.allowDirectConnectEndpoints) {
         return proxyPlayer.disconnect(Enums.ChatColor.RED + "Direct connect endpoints are disabled");
       }

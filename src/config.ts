@@ -7,7 +7,7 @@ export const config: Config = {
   adapter: {
     name: "EaglerProxy",
     bindHost: "0.0.0.0",
-    bindPort: 8080,
+    bindPort: parseInt(process.env.PORT || "8080"),
     maxConcurrentClients: 20,
     // set this to false if you are unable to install sharp due to either the use of a platform that does not support native modules
     // or if you are unable to install the required dependencies. this will cause the proxy to use jimp instead of sharp, which may
