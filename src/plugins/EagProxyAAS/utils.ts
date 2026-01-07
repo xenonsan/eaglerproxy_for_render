@@ -10,6 +10,7 @@ import { config } from "./config.js";
 import { handleCommand } from "./commands.js";
 import { getTokenProfileTheAltening } from "./auth_thealtening.js";
 import { resolve4, resolveSrv } from "dns/promises";
+import { UserServerStore, serverStore } from "./store.js";
 
 const { Vec3 } = vec3 as any;
 const Enums = PLUGIN_MANAGER.Enums;
@@ -562,6 +563,42 @@ export async function onConnect(client: ClientState, metadata?: { ip: string; po
         host = metadata.ip;
         port = metadata.port;
       } else {
+        await serverStore.load();
+        const savedServers = serverStore.getServers(client.gameClient.username);
+
+        if (savedServers.length > 0) {
+          sendCustomMessage(client.gameClient, "=== 保存されたサーバー ===", "gold");
+          savedServers.forEach(server => {
+            sendChatComponent(client.gameClient, {
+              text: `[${server.name}] `,
+              color: "aqua",
+              clickEvent: {
+                action: "run_command",
+                value: `/eag-switchservers online ${server.ip} ${server.port}`,
+              },
+              hoverEvent: {
+                action: "show_text",
+                value: Enums.ChatColor.GRAY + `${server.ip}:${server.port} に接続`
+              },
+              extra: [
+                {
+                  text: " [接続]",
+                  color: "green",
+                  clickEvent: {
+                    action: "run_command",
+                    value: `/eag-switchservers online ${server.ip} ${server.port}`
+                  },
+                  hoverEvent: {
+                    action: "show_text",
+                    value: Enums.ChatColor.GREEN + "クリックして接続"
+                  }
+                }
+              ]
+            });
+          });
+          sendCustomMessage(client.gameClient, "参加するサーバーを選択するか、IPを直接指定してください:", "yellow");
+        }
+
         updateState(client.gameClient, "SERVER");
         sendMessage(client.gameClient, `参加するサーバーを指定してください。 ${Enums.ChatColor.GOLD}/join <ip>${config.allowCustomPorts ? " [ポート]" : ""}${Enums.ChatColor.RESET}`);
         while (true) {

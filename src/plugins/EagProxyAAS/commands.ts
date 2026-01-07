@@ -6,6 +6,7 @@ import { ConnectType } from "./types.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { isValidIp } from "./utils.js";
+import { serverStore } from "./store.js";
 
 const SEPARATOR = "======================================";
 const METADATA: {
@@ -52,6 +53,10 @@ export function handleCommand(sender: Player, cmd: string): void {
       break;
     case "/eag-switchservers":
       switchServer(cmd, sender);
+      break;
+    case "/server":
+    case "/sv":
+      handleServerCommand(sender, cmd);
       break;
   }
 }
@@ -120,6 +125,24 @@ export function helpCommand(sender: Player) {
     ],
   });
   sendPluginChatMessage(sender, {
+    text: `/server <add|remove|list> ...`,
+    color: "light_green",
+    hoverEvent: {
+      action: "show_text",
+      value: Enums.ChatColor.GOLD + "クリックしてコマンドをチャットに貼り付け",
+    },
+    clickEvent: {
+      action: "suggest_command",
+      value: `/server `,
+    },
+    extra: [
+      {
+        text: " - サーバーブックマークの管理",
+        color: "aqua",
+      },
+    ],
+  });
+  sendPluginChatMessage(sender, {
     text: `${METADATA.name} バージョン v${METADATA.version} を実行中。`,
     color: "gray",
   });
@@ -127,6 +150,103 @@ export function helpCommand(sender: Player) {
     text: SEPARATOR,
     color: "yellow",
   });
+}
+
+export async function handleServerCommand(sender: Player, cmd: string) {
+  const args = cmd.split(" ");
+  const subCommand = args[1]?.toLowerCase();
+
+  await serverStore.load(); // Load latest data
+
+  if (subCommand === "add") {
+    const name = args[2];
+    const ip = args[3];
+    const port = parseInt(args[4] || "25565");
+
+    if (!name || !ip) {
+      return sendPluginChatMessage(sender, {
+        text: "使用法: /server add <名前> <IP> [ポート]",
+        color: "red",
+      });
+    }
+
+    if (!(await isValidIp(ip))) {
+      return sendPluginChatMessage(sender, {
+        text: "無効なIPアドレスです。",
+        color: "red",
+      });
+    }
+
+    await serverStore.addServer(sender.username, { name, ip, port });
+    sendPluginChatMessage(sender, {
+      text: `サーバー '${name}' (${ip}:${port}) を保存しました！`,
+      color: "green",
+    });
+
+  } else if (subCommand === "remove") {
+    const name = args[2];
+    if (!name) {
+      return sendPluginChatMessage(sender, {
+        text: "使用法: /server remove <名前>",
+        color: "red",
+      });
+    }
+
+    await serverStore.removeServer(sender.username, name);
+    sendPluginChatMessage(sender, {
+      text: `サーバー '${name}' を削除しました。`,
+      color: "green",
+    });
+
+  } else if (subCommand === "list") {
+    const servers = serverStore.getServers(sender.username);
+    if (servers.length === 0) {
+      return sendPluginChatMessage(sender, {
+        text: "保存されたサーバーはありません。",
+        color: "yellow",
+      });
+    }
+
+    sendPluginChatMessage(sender, {
+      text: "=== 保存されたサーバー ===",
+      color: "gold",
+    });
+
+    for (const server of servers) {
+      sendPluginChatMessage(sender, {
+        text: `[${server.name}]`,
+        color: "aqua",
+        clickEvent: {
+          action: "run_command",
+          value: `/eag-switchservers online ${server.ip} ${server.port}`,
+        },
+        hoverEvent: {
+          action: "show_text",
+          value: Enums.ChatColor.GRAY + `${server.ip}:${server.port} に接続`
+        },
+        extra: [
+          {
+            text: " [削除]",
+            color: "red",
+            clickEvent: {
+              action: "run_command",
+              value: `/server remove ${server.name}`
+            },
+            hoverEvent: {
+              action: "show_text",
+              value: Enums.ChatColor.RED + "このサーバーを削除"
+            }
+          }
+        ]
+      });
+    }
+
+  } else {
+    sendPluginChatMessage(sender, {
+      text: "無効なサブコマンドです。add, remove, list が使用できます。",
+      color: "red",
+    });
+  }
 }
 
 export function toggleParticles(sender: Player) {

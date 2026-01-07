@@ -12,6 +12,12 @@ export type ClientState = {
   lastStatusUpdate: number;
 };
 
+export interface SavedServer {
+  name: string;
+  ip: string;
+  port?: number;
+}
+
 export enum ConnectionState {
   AUTH,
   SUCCESS,
